@@ -70,7 +70,7 @@ Rate limiting and account lockouts on the login endpoint are a primary defense. 
 - Functionality and user stories
 
 #### Authentication
-- Member and admin authentication mechanisms
+- Member and admin authentication mechanisms'xh
 
 #### Authorization
 - Permission controls by role
@@ -130,35 +130,41 @@ Rate limiting and account lockouts on the login endpoint are a primary defense. 
 3. Trust Boundaries
    - Dashed lines depicting boundaries
 
-[INSERT DIAGRAM HERE]
+![Architecture Diagram (level 1 & 2 of C4)](../images/Architecture2.png)
 
 ---
 
-## Deliverable Part 2B: STRIDE Threat Model
+## Deliverable Part 2B: STRIDE Threat Model (Shostack, 2014)
 
 ### Threat 1: Spoofing Identity
 
-[Description of how attackers could impersonate users or systems - paragraph discussing the threat in context of Hiking Club]
+An attacker may attempt to impersonate a legitimate user, device, or service on the network by forging credentials, MAC addresses, or IP addresses. For example, ARP spoofing allows a malicious actor to link their MAC address with the IP address of a legitimate host, redirecting traffic meant for that host through the attacker's machine. Similarly, credential theft through phishing or brute-force attacks enables unauthorized users to authenticate as trusted accounts. Without strong mutual authentication mechanisms such as multi-factor authentication, certificate-based identity verification, or 802.1X port-level access control, networks remain highly vulnerable to identity spoofing attacks.
+For the Hiking Club System, a spoof could happen to the front-end server if an attacker intercepted an admin's credentials by a fishing tactic, brute force tactics (password strength was never discussed), or other means. Alleviating this with more secure methods is suggested.
 
 ### Threat 2: Tampering with Data
 
-[Description of unauthorized modification - payment data, event details, member profiles]
+Network communications and stored data are at risk of tampering when adequate integrity controls are absent. A man-in-the-middle (MITM) attacker positioned between two communicating hosts can intercept and modify packets in transit — altering financial transactions, injecting malicious payloads into software update streams, or corrupting configuration data sent to network devices. Without end-to-end encryption, digital signatures, and cryptographic message authentication codes (MACs), there is no reliable mechanism for recipients to detect whether transmitted data has been altered. Tampering threats also extend to network device configurations, where unauthorized modifications to router ACLs or firewall rules can silently expose critical systems.
+System is most vulnerable with data tampering between the client system, and the front-end server. It is still possible for someone to get access to  the firewalls between the database server and the front-end server allowing them to access the data directly.
 
 ### Threat 3: Repudiation of Actions
 
-[Description of denial of actions - administrative actions, financial transactions]
+Repudiation threats arise when a network lacks sufficient audit trails and non-repudiation controls, allowing users or systems to deny having performed actions they actually took. An attacker who compromises a logging server or tampers with event logs can erase evidence of intrusions, privilege escalations, or data exfiltration. Even legitimate insiders may deny unauthorized actions if logging is incomplete or unauthenticated. To counter repudiation threats, networks should employ centralized, tamper-evident logging solutions — such as write-once log stores or SIEM systems with cryptographic log signing — ensuring that all significant actions are attributable and traceable to a specific identity and time.
+This design has a huge opportunity to get attacked by this. No logging was defined anywhere in the system.
 
 ### Threat 4: Information Disclosure
 
-[Description of unauthorized access - medical information, financial data, member profiles]
+Sensitive data traversing a network can be exposed through eavesdropping, misconfigured access controls, or insecure protocols. Unencrypted protocols such as Telnet, FTP, or HTTP transmit credentials and data in plaintext, making them trivially capturable by anyone with access to the same network segment or an intermediate routing point. Misconfigured network shares, overly permissive firewall rules, and verbose error messages returned by services can all inadvertently reveal internal architecture, user data, or cryptographic material. Information disclosure threats are particularly dangerous in shared or multi-tenant environments where insufficient network segmentation allows traffic from one zone to be observed by hosts in another.
+Considering the system will be running over https between the clients and the front-end server, this should not be an issues with them. Between the back-end and front-end servers it was never mentioned if they were secure, but most single-entry systems like the one proposed still use secure methods of communication such as over HTTPS.
 
 ### Threat 5: Denial of Service
 
-[Description of system unavailability - brute force attacks, resource exhaustion]
+Denial of Service (DoS) threats target the availability of network resources by overwhelming bandwidth, exhausting connection state tables, or exploiting protocol weaknesses. Common examples include SYN flood attacks, UDP amplification attacks, and resource exhaustion against application-layer services. Distributed variants (DDoS) leverage botnets to multiply attack volume far beyond what a single source could generate, making mitigation significantly more challenging. Critical infrastructure such as DNS resolvers, load balancers, and VPN concentrators are particularly attractive targets, as taking them offline can cascade into widespread service unavailability. Effective countermeasures include rate limiting, ingress and egress traffic filtering, anycast-based DDoS scrubbing services, and over-provisioning of critical network capacity to absorb volumetric attacks.
+This system has no load balancers in place, so a Denial of Service is very possible in this system.
 
 ### Threat 6: Elevation of Privilege
 
-[Description of unauthorized permission escalation - member accessing admin functions]
+Elevation of Privilege threats occur when an attacker gains capabilities or access rights beyond those they were explicitly granted, allowing them to operate outside their intended trust boundary. On a network, this may manifest as exploiting a vulnerability in a network management interface to escalate from a read-only monitoring account to full administrative control, or leveraging a misconfigured sudo rule on a network appliance to execute arbitrary commands as root. Attackers may also chain together lower-severity vulnerabilities — such as an information disclosure flaw combined with a weak credential policy — to progressively escalate their privileges across multiple systems. Defenses against elevation of privilege include strict enforcement of the principle of least privilege, regular audits of user and service account permissions, timely patching of network device firmware and management software, and network segmentation that limits lateral movement even after an initial compromise.
+As the current Elevation of Privilege vulnerabilities in Linux systems have shown us, no one can be completely safe from this, but there are no obvious vulnerabilities for this system.
 
 ---
 
