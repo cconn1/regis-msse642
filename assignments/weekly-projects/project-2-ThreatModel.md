@@ -261,7 +261,7 @@ The hiking club web application is the only means for the GHC to serve hundreds 
 
 ## References
 
-Hoffman, A. (YEAR). *Web application security* (2nd ed.). O'Reilly Media.
+Hoffman, A. (2024). *Web application security* (2nd ed.). O'Reilly Media.
 
 OWASP. (n.d.). *Category: Threat modeling*. Open Worldwide Application Security Project Wiki. https://wiki.owasp.org/index.php/Category:Threat_Modeling
 
