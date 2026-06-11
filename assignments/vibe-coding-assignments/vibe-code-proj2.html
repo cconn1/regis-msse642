@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mishandling of Exceptional Conditions — A10:2025 | OWASP Security Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:         #f8f7f4;
+  --bg2:        #ffffff;
+  --bg3:        #f1efe9;
+  --border:     #e2ddd5;
+  --border2:    #ccc8be;
+  --navy:       #1a2e4a;
+  --navy2:      #243d60;
+  --teal:       #0d7377;
+  --teal-light: #e6f4f4;
+  --teal-mid:   #b2dede;
+  --red:        #c0392b;
+  --red-light:  #fdf0ef;
+  --red-mid:    #f5c6c2;
+  --amber:      #d4860a;
+  --amber-light:#fef8ec;
+  --green:      #1a7a4a;
+  --green-light:#edf7f2;
+  --green-mid:  #b2dfc8;
+  --text:       #1e1e1e;
+  --text2:      #4a4a4a;
+  --text3:      #7a7a7a;
+  --text4:      #aaaaaa;
+  --code-bg:    #f0ede6;
+  --shadow:     0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.06);
+  --radius:     10px;
+  --radius-sm:  6px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--navy);
+  color: white;
+  padding: 0 24px;
+}
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  flex-wrap: wrap;
+}
+.header-badge {
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.25);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+.header-title {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+}
+.header-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,.6);
+  margin-left: auto;
+}
+
+/* ── ATTACK SELECTOR ── */
+.attack-selector {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+}
+.attack-selector-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 14px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.attack-selector-inner::-webkit-scrollbar { display: none; }
+.attack-tab {
+  flex-shrink: 0;
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  color: var(--text2);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.attack-tab:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: var(--teal-light);
+}
+.attack-tab.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+}
+
+/* ── MAIN LAYOUT ── */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+}
+
+/* ── ATTACK INTRO CARD ── */
+.intro-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.intro-icon {
+  font-size: 36px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.intro-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+.intro-title {
+  font-family: 'Lora', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.intro-desc {
+  color: var(--text2);
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 640px;
+}
+.intro-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid;
+}
+.tag-red   { background: var(--red-light);   color: var(--red);   border-color: var(--red-mid); }
+.tag-teal  { background: var(--teal-light);  color: var(--teal);  border-color: var(--teal-mid); }
+.tag-amber { background: var(--amber-light); color: var(--amber); border-color: #f0c97a; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  margin-bottom: 20px;
+}
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.progress-label span { font-weight: 600; color: var(--navy); }
+.progress-track {
+  height: 5px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), #1ab5bb);
+  border-radius: 3px;
+  transition: width .4s ease;
+}
+
+/* ── STEP DOTS ── */
+.step-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.step-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  background: var(--bg2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all .2s;
+  flex-shrink: 0;
+}
+.step-dot.done {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: white;
+}
+.step-dot.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+  box-shadow: 0 0 0 3px rgba(26,46,74,.15);
+}
+.step-line {
+  flex: 1;
+  min-width: 16px;
+  max-width: 40px;
+  height: 2px;
+  background: var(--border);
+  border-radius: 1px;
+}
+.step-line.done { background: var(--teal); }
+
+/* ── STEP CARD ── */
+.step-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.step-card-head {
+  background: var(--navy);
+  color: white;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.step-num-badge {
+  background: rgba(255,255,255,.15);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 12px;
+}
+.step-title-text {
+  font-size: 15px;
+  font-weight: 600;
+}
+.step-card-body {
+  padding: 22px;
+}
+.step-narrative {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.75;
+  margin-bottom: 18px;
+}
+.step-narrative strong { color: var(--text); font-weight: 600; }
+
+/* ── SPLIT PANELS ── */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 16px 0;
+}
+@media (max-width: 680px) {
+  .split { grid-template-columns: 1fr; }
+}
+.panel {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1.5px solid;
+}
+.panel.vuln { border-color: var(--red-mid); }
+.panel.safe { border-color: var(--green-mid); }
+.panel-head {
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel.vuln .panel-head { background: var(--red-light);   color: var(--red); }
+.panel.safe .panel-head { background: var(--green-light); color: var(--green); }
+.panel-body {
+  background: #fafaf8;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 80px;
+}
+
+/* Code colors */
+.c-gray  { color: var(--text3); }
+.c-red   { color: var(--red); }
+.c-green { color: var(--green); }
+.c-amber { color: var(--amber); }
+.c-teal  { color: var(--teal); }
+.c-navy  { color: var(--navy); font-weight: 600; }
+.c-bold  { font-weight: 700; }
+
+/* ── CALLOUT BOXES ── */
+.callout {
+  border-left: 3px solid;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 12px 16px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 14px 0;
+}
+.callout.danger { border-color: var(--red);   background: var(--red-light);   color: #7a1a13; }
+.callout.safe   { border-color: var(--green); background: var(--green-light); color: #145435; }
+.callout.info   { border-color: var(--teal);  background: var(--teal-light);  color: #0a4d50; }
+.callout.warn   { border-color: var(--amber); background: var(--amber-light); color: #7a4d08; }
+.callout strong { font-weight: 600; }
+
+/* ── REAL WORLD BOX ── */
+.real-world {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin: 14px 0;
+}
+.rw-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.rw-text {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.65;
+}
+
+/* ── NAV BUTTONS ── */
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.btn {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+}
+.btn-primary:hover { background: var(--navy2); }
+.btn-outline {
+  background: white;
+  border-color: var(--border2);
+  color: var(--text2);
+}
+.btn-outline:hover { border-color: var(--navy); color: var(--navy); }
+.btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+/* ── COMPLETION CARD ── */
+.complete-card {
+  background: var(--green-light);
+  border: 1.5px solid var(--green-mid);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.complete-icon { font-size: 40px; margin-bottom: 12px; }
+.complete-title {
+  font-family: 'Lora', serif;
+  font-size: 22px;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.complete-text {
+  font-size: 14px;
+  color: var(--text2);
+  max-width: 480px;
+  margin: 0 auto 18px;
+  line-height: 1.7;
+}
+
+/* ── SUMMARY TABLE ── */
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  margin-top: 20px;
+}
+.summary-table th {
+  background: var(--navy);
+  color: white;
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .04em;
+}
+.summary-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.summary-table tr:nth-child(even) td { background: var(--bg3); }
+.summary-table tr:last-child td { border-bottom: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .header-sub { display: none; }
+  .intro-card { flex-direction: column; gap: 12px; }
+  .intro-icon { font-size: 28px; }
+  .intro-title { font-size: 18px; }
+  .step-card-body { padding: 16px; }
+  .main { padding: 16px 14px 40px; }
+  .btn { font-size: 13px; padding: 9px 16px; }
+  .summary-table { font-size: 12px; }
+  .summary-table th, .summary-table td { padding: 8px 10px; }
+}
+@media (max-width: 400px) {
+  .header-title { font-size: 16px; }
+  .attack-tab { font-size: 12px; padding: 7px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-badge">OWASP A10:2025</div>
+    <div class="header-title">Mishandling of Exceptional Conditions Lab</div>
+    <div class="header-sub">Interactive Learning Tool · New in 2025 Top 10</div>
+  </div>
+</div>
+
+<!-- ATTACK SELECTOR -->
+<div class="attack-selector">
+  <div class="attack-selector-inner">
+    <button class="attack-tab active" onclick="selectAttack(0)">🚪 Failing Open</button>
+    <button class="attack-tab" onclick="selectAttack(1)">💥 Unhandled Exceptions</button>
+    <button class="attack-tab" onclick="selectAttack(2)">⏱️ Resource Exhaustion</button>
+    <button class="attack-tab" onclick="selectAttack(3)">📋 Summary</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main-content"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+const attacks = [
+  {
+    id: 0,
+    icon: '🚪',
+    label: 'Failure Mode 1 of 3',
+    title: 'Failing Open — When Errors Grant Access',
+    desc: 'When a security check encounters an exception — a database timeout, a network error, a malformed token — the system must decide: deny access (fail closed) or allow access (fail open). Failing open means every error becomes a backdoor.',
+    tags: ['Auth Bypass', 'CWE-636', 'Critical Impact'],
+    tagClasses: ['tag-red', 'tag-teal', 'tag-amber'],
+    steps: [
+      {
+        title: 'Fail Open vs. Fail Closed',
+        narrative: `Every security check can fail. The database might be unreachable. The token might be malformed. The authorization service might time out. The question isn't <em>whether</em> your checks will encounter exceptions — it's <strong>what happens when they do</strong>.\n\n<strong>Failing open</strong> means the system defaults to "allow" when an error occurs. <strong>Failing closed</strong> means the system defaults to "deny." The difference between these two behaviors is often a single line of code in a catch block — and it determines whether an attacker can bypass your entire security layer by simply triggering an error.`,
+        vuln: {
+          label: '🔴 Fail open — exception grants access',
+          code: `<span class="c-gray"># Authentication middleware</span>
+<span class="c-red">def verify_user(request):
+    try:
+        token = request.headers['Authorization']
+        user = auth_service.validate(token)
+        return user
+    except Exception as e:
+        # "Something went wrong, let them through"
+        logger.warning(f"Auth error: {e}")
+        return DEFAULT_USER  ← FAIL OPEN</span>
+
+<span class="c-amber"># If auth_service is down, times out,
+# or the token is garbage:
+# → Every request is authenticated
+# → Attacker just needs to cause an error
+# → Send a malformed token = full access</span>`
+        },
+        safe: {
+          label: '🟢 Fail closed — exception denies access',
+          code: `<span class="c-gray"># Authentication middleware</span>
+<span class="c-green">def verify_user(request):
+    try:
+        token = request.headers['Authorization']
+        user = auth_service.validate(token)
+        return user
+    except InvalidTokenError:
+        logger.warning("Invalid token")
+        raise Unauthorized("Bad credentials")
+    except ServiceUnavailableError:
+        logger.error("Auth service down")
+        raise ServiceUnavailable("Try later")
+    except Exception as e:
+        logger.critical(f"Unexpected: {e}")
+        raise Forbidden("Access denied")</span>
+
+<span class="c-gray"># Every exception path → deny access.
+# Specific exceptions → specific handling.
+# Catch-all → still denies, never allows.</span>`
+        },
+        callout: { type: 'danger', text: '<strong>The one-line difference:</strong> <code>return DEFAULT_USER</code> vs <code>raise Forbidden()</code>. That single line in a catch block is the difference between a secure system and one where every error is an authentication bypass. Most security testing only covers the "happy path" — valid tokens, working services. The fail-open bug only appears when things go wrong.' },
+        realWorld: { text: 'In 2026, CVE-2026-27448 revealed that pyOpenSSL\'s TLS server name callback silently swallowed exceptions. When a callback function raised an error, the TLS handshake proceeded as if the callback succeeded — a textbook fail-open pattern. Connections that should have been rejected were allowed through.' }
+      },
+      {
+        title: 'Authorization Bypass from Logic Flaws',
+        narrative: `Fail-open doesn't only happen in catch blocks. It also happens when <strong>logic errors</strong> in security code create paths where no check runs at all.\n\nIf an authorization function only checks known conditions and falls through to "allow" for anything else, an attacker who triggers an <em>unexpected</em> condition bypasses the check entirely. The code doesn't crash — it just never says "no."`,
+        vuln: {
+          label: '🔴 Logic gap — unknown auth type = allowed',
+          code: `<span class="c-gray"># CUPS-style auth check (simplified)</span>
+<span class="c-red">def check_auth(request, config):
+    auth_header = request.headers.get('Authorization')
+    
+    if config.auth_type == 'Basic':
+        return validate_basic(auth_header)
+    
+    if config.auth_type == 'Digest':
+        return validate_digest(auth_header)
+    
+    # Auth type is "Certificate" but client
+    # sent a Basic header instead...
+    # No branch handles this case.
+    # Function reaches the end → returns None
+    # Python treats None as falsy... but the
+    # caller doesn't check:</span>
+
+<span class="c-red">result = check_auth(request, config)
+# result is None, but code continues
+process_request(request)  ← NO AUTH RAN</span>`
+        },
+        safe: {
+          label: '🟢 Explicit deny for every unhandled case',
+          code: `<span class="c-green">def check_auth(request, config):
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header:
+        raise Unauthorized("No credentials")
+    
+    if config.auth_type == 'Basic':
+        return validate_basic(auth_header)
+    
+    if config.auth_type == 'Digest':
+        return validate_digest(auth_header)
+    
+    # Explicit deny for ANY unmatched case
+    raise Forbidden(
+        f"Unsupported auth: {config.auth_type}"
+    )</span>
+
+<span class="c-green"># Caller also enforces:
+result = check_auth(request, config)
+if not result or not result.is_authenticated:
+    raise Unauthorized("Auth failed")</span>
+
+<span class="c-gray"># No path through this code allows
+# an unauthenticated request.
+# Every branch ends in allow OR deny.</span>`
+        },
+        callout: { type: 'info', text: '<strong>The missing "else":</strong> Security code must handle every possible path — not just the expected ones. If your function only has branches for conditions A and B, condition C silently falls through. In security-critical code, the default must always be "deny."' },
+        realWorld: { text: 'CVE-2025-58060 in OpenPrinting CUPS was exactly this pattern. When the server was configured for Digest or certificate auth but a client sent a Basic auth header, the password check was skipped entirely. The mismatch between configured and received auth types hit an unhandled code path — and the request went through without any credential verification.' }
+      },
+      {
+        title: 'Defensive Patterns — Designing for Failure',
+        narrative: `Fail-closed behavior isn't about adding more catch blocks — it's about <strong>designing your system so that access requires explicit proof</strong>, not the absence of a denial.\n\nThe safest pattern is a "deny by default" architecture: every request starts as unauthorized, and only a successful, complete verification path grants access. If anything goes wrong at any point, the request stays unauthorized.`,
+        vuln: {
+          label: '🔴 "Prove they\'re NOT allowed" (fail open)',
+          code: `<span class="c-gray"># Anti-pattern: check for denial</span>
+<span class="c-red">def is_allowed(user, resource):
+    # Check the deny list
+    try:
+        denied = policy_engine.check_deny(
+            user, resource
+        )
+    except PolicyEngineError:
+        denied = False  ← assume not denied
+    
+    if denied:
+        return False
+    
+    # Not denied = allowed
+    return True</span>
+
+<span class="c-amber"># If the policy engine is down:
+# → denied = False (exception caught)
+# → Function returns True
+# → EVERYONE is allowed EVERYWHERE
+# This is "default allow" architecture.</span>`
+        },
+        safe: {
+          label: '🟢 "Prove they ARE allowed" (fail closed)',
+          code: `<span class="c-green">def is_allowed(user, resource):
+    # Must PROVE access — not disprove denial
+    try:
+        grant = policy_engine.check_allow(
+            user, resource
+        )
+    except PolicyEngineError as e:
+        logger.critical(f"Policy down: {e}")
+        return False  ← assume not allowed
+    
+    if not grant or not grant.is_valid:
+        return False
+    
+    # Only explicit, verified grant = access
+    return True</span>
+
+<span class="c-gray"># If the policy engine is down:
+# → Exception caught → return False
+# → Nobody gets access
+# → This is "default deny" architecture.
+# Availability suffers. Security doesn't.</span>`
+        },
+        callout: { type: 'safe', text: '<strong>Default-deny architecture:</strong> The question to ask for every security check is: "If this code throws an exception, does the user get <em>more</em> access or <em>less</em>?" If the answer is "more," you have a fail-open bug. Restructure so that exceptions always reduce access, never increase it.' },
+        realWorld: { text: 'In February 2025, Palo Alto Networks disclosed CVE-2025-0108 — an authentication bypass in their PAN-OS management web interface. An unauthenticated attacker with network access could bypass authentication entirely and invoke PHP scripts on the management interface. The flaw was in the authentication handling logic, not in any cryptographic weakness.' }
+      }
+    ]
+  },
+  {
+    id: 1,
+    icon: '💥',
+    label: 'Failure Mode 2 of 3',
+    title: 'Unhandled Exceptions — Silent Failures & Crashes',
+    desc: 'When exceptions are swallowed silently, ignored with empty catch blocks, or allowed to crash an entire service, the system enters an unknown state. Silent failures bypass security controls. Crashes create denial-of-service conditions. Both are exploitable.',
+    tags: ['Service Crashes', 'CWE-476 / CWE-209', 'All Platforms'],
+    tagClasses: ['tag-red', 'tag-teal', 'tag-amber'],
+    steps: [
+      {
+        title: 'Empty Catch Blocks — The Silent Killer',
+        narrative: `An empty catch block is one of the most dangerous patterns in security-critical code. The exception fires, signaling that something went wrong — a validation failed, a security check errored, a signature didn't verify — and the catch block <strong>does nothing</strong>.\n\nExecution continues as if the error never happened. The security control that was supposed to run? Silently skipped. The check that was supposed to block the request? Never reported the failure. The code looks correct at a glance, but the safety net has a hole in it.`,
+        vuln: {
+          label: '🔴 Empty catch blocks skip security checks',
+          code: `<span class="c-gray"># Input validation with silent failure</span>
+<span class="c-red">def process_payment(request):
+    amount = request.data['amount']
+    
+    # Validate the payment signature
+    try:
+        verify_signature(request)
+    except Exception:
+        pass  ← SILENT. Verification skipped.
+    
+    # Check for fraud indicators
+    try:
+        fraud_check(request)
+    except Exception:
+        pass  ← SILENT. Fraud check skipped.
+    
+    # Both checks failed silently.
+    # Code reaches here regardless.
+    execute_transfer(amount)  ← runs anyway</span>
+
+<span class="c-amber"># Attacker sends a malformed signature
+# → verify_signature throws
+# → catch block swallows it
+# → payment executes unsigned</span>`
+        },
+        safe: {
+          label: '🟢 Every exception is handled explicitly',
+          code: `<span class="c-green">def process_payment(request):
+    amount = request.data['amount']
+    
+    # Validate — failure = abort
+    try:
+        verify_signature(request)
+    except InvalidSignature:
+        logger.warning("Bad signature",
+            extra={"ip": request.remote_addr})
+        raise PaymentRejected("Invalid sig")
+    except Exception as e:
+        logger.critical(f"Sig check: {e}")
+        raise PaymentRejected("Verify failed")
+    
+    # Fraud check — failure = abort
+    try:
+        fraud_result = fraud_check(request)
+    except Exception as e:
+        logger.critical(f"Fraud check: {e}")
+        raise PaymentRejected("Check failed")
+    
+    if not fraud_result.is_clean:
+        raise PaymentRejected("Flagged")
+    
+    execute_transfer(amount)</span>
+
+<span class="c-gray"># No silent failures. Every exception
+# aborts the operation. Every path is
+# logged and traceable.</span>`
+        },
+        callout: { type: 'danger', text: '<strong>Rule: never use <code>except: pass</code> in security-critical code.</strong> An empty catch block is functionally identical to deleting the security check entirely — except it\'s harder to spot in code review because the check <em>appears</em> to exist. Static analysis tools (like Bandit, SonarQube, and Semgrep) flag empty catch blocks for exactly this reason.' },
+        realWorld: { text: 'The pyOpenSSL vulnerability (CVE-2026-27448) was caused by exactly this pattern. The TLS server name callback\'s exception handler silently swallowed errors instead of terminating the connection. The fix added explicit exception propagation: exceptions now call sys.excepthook and return a fatal TLS alert, killing the connection instead of allowing it.' }
+      },
+      {
+        title: 'Null Pointer Dereferences & Missing Input Validation',
+        narrative: `When code receives input it doesn't expect — a null value, a missing field, a data type mismatch — and doesn't validate it, the result is often a <strong>null pointer dereference</strong> or an <strong>out-of-bounds memory read</strong>.\n\nIn a user-level application, this causes a crash. In a kernel driver or system service, it can bring down the entire machine. In either case, the application enters an <strong>unknown state</strong> — and unknown states are where security breaks down.`,
+        vuln: {
+          label: '🔴 Missing null check crashes the service',
+          code: `<span class="c-gray"># API endpoint — no input validation</span>
+<span class="c-red">def get_user_profile(request):
+    user_id = request.args.get('id')
+    # No check: what if user_id is None?
+    
+    user = db.query(
+        "SELECT * FROM users WHERE id = %s",
+        (user_id,)
+    )
+    # No check: what if query returns None?
+    
+    return {
+        "name": user.name,    ← crash if None
+        "email": user.email,  ← crash if None
+        "role": user.role
+    }</span>
+
+<span class="c-amber"># Request: GET /api/profile
+# (no 'id' parameter at all)
+# → user_id = None
+# → query returns None
+# → user.name → AttributeError
+# → 500 Internal Server Error
+# → Service may leak stack trace</span>`
+        },
+        safe: {
+          label: '🟢 Validate inputs, handle nulls explicitly',
+          code: `<span class="c-green">def get_user_profile(request):
+    user_id = request.args.get('id')
+    
+    # 1. Validate input exists and is valid
+    if not user_id:
+        raise BadRequest("Missing user ID")
+    if not user_id.isdigit():
+        raise BadRequest("Invalid user ID")
+    
+    # 2. Validate query result
+    user = db.query(
+        "SELECT * FROM users WHERE id = %s",
+        (int(user_id),)
+    )
+    if user is None:
+        raise NotFound("User not found")
+    
+    # 3. Safe to access — all nulls handled
+    return {
+        "name": user.name,
+        "email": user.email,
+        "role": user.role
+    }</span>
+
+<span class="c-gray"># Every possible null is checked.
+# Every invalid input returns a clear,
+# safe error — no stack traces.</span>`
+        },
+        callout: { type: 'info', text: '<strong>CWE-476 (NULL Pointer Dereference)</strong> is one of the most common CWEs in this OWASP category. The fix is straightforward: validate every input, check every return value, and never assume data exists. Defensive programming means treating every external value as potentially null, malformed, or malicious.' },
+        realWorld: { text: 'On July 19, 2024, CrowdStrike deployed a configuration update to its Falcon sensor that triggered an out-of-bounds memory read in a kernel-level driver. The update had more fields than the code expected, and missing bounds checking caused the driver to read invalid memory. The result: 8.5 million Windows machines crashed with blue screens of death. Airlines, hospitals, banks, and emergency services were disrupted worldwide in what was called the largest IT outage in history.' }
+      },
+      {
+        title: 'Graceful Degradation — Breaking Without Breaking',
+        narrative: `The goal isn't to prevent all exceptions — that's impossible. The goal is to ensure that when exceptions occur, the system <strong>degrades gracefully</strong>: it reduces functionality without losing security, logs the failure for investigation, and recovers automatically when the underlying issue resolves.\n\nA well-designed system doesn't crash on unexpected input. It doesn't silently skip security checks. It doesn't expose internal details in error messages. It says "something went wrong," handles it safely, and keeps running.`,
+        vuln: {
+          label: '🔴 No degradation — crash or expose',
+          code: `<span class="c-gray"># When the user service fails:</span>
+<span class="c-red">Option A: Crash entirely
+→ Unhandled exception
+→ 500 error with stack trace
+→ Service restarts (if lucky)
+→ All users affected</span>
+
+<span class="c-red">Option B: Swallow and continue
+→ Empty catch block
+→ Security checks silently skipped
+→ Unknown system state
+→ Attacker exploits the gap</span>
+
+<span class="c-amber"># Neither option is acceptable.
+# Crash = availability failure (DoS).
+# Swallow = security failure (bypass).
+# Both are A10:2025 violations.</span>`
+        },
+        safe: {
+          label: '🟢 Graceful degradation pattern',
+          code: `<span class="c-green"># When the user service fails:
+Option C: Degrade safely
+
+try:
+    full_profile = user_service.get(uid)
+    return full_response(full_profile)
+
+except UserServiceTimeout:
+    # Degrade: return cached/minimal data
+    # Security controls STILL enforced
+    logger.warning("User svc timeout")
+    cached = cache.get(f"user:{uid}")
+    if cached and cached.is_authenticated:
+        return minimal_response(cached)
+    raise ServiceUnavailable("Try later")
+
+except Exception as e:
+    # Unknown error: fail closed
+    logger.critical(f"User svc: {e}")
+    alert_oncall("user-service-down")
+    raise ServiceUnavailable("Try later")</span>
+
+<span class="c-gray"># Service stays up, security stays on,
+# and the team is alerted immediately.</span>`
+        },
+        callout: { type: 'safe', text: '<strong>The three rules of graceful degradation:</strong> (1) Never crash on expected failure modes — handle them with reduced functionality. (2) Never silently continue when a security check fails — fail closed. (3) Always alert — if degradation is happening, someone needs to know.' },
+        realWorld: { text: 'OWASP\'s testing data for the 2025 Top 10 mapped A10 to over 769,000 occurrences and 3,416 CVEs across the applications tested. The category\'s inclusion as a new entry signals that the security community now considers exception handling failures a distinct class of vulnerability — not just a code quality issue, but a direct path to security breaches.' }
+      }
+    ]
+  },
+  {
+    id: 2,
+    icon: '⏱️',
+    label: 'Failure Mode 3 of 3',
+    title: 'Resource Exhaustion & Missing Timeouts',
+    desc: 'When applications don\'t set limits on resource consumption — unbounded request sizes, missing timeouts, infinite retry loops — an attacker can exhaust memory, CPU, connections, or disk space. The result is denial of service, and sometimes, security controls being silently disabled under load.',
+    tags: ['Denial of Service', 'CWE-400 / CWE-770', 'APIs / SaaS'],
+    tagClasses: ['tag-red', 'tag-teal', 'tag-amber'],
+    steps: [
+      {
+        title: 'Missing Timeouts — Requests That Never End',
+        narrative: `Every external call your application makes — to a database, an API, a microservice, a third-party provider — can hang indefinitely. If your code doesn't set a <strong>timeout</strong>, a single slow response can block a thread, a connection, or an entire worker pool.\n\nAn attacker who discovers a slow endpoint can open hundreds of connections, each holding a thread hostage. When the thread pool is exhausted, legitimate users get connection refused errors. Your monitoring might not even alert — the server isn't "down," it's just fully occupied doing nothing.`,
+        vuln: {
+          label: '🔴 No timeouts — connections hang forever',
+          code: `<span class="c-gray"># External API call with no timeout</span>
+<span class="c-red">import requests
+
+def check_address(address):
+    # No timeout set — default is INFINITE
+    resp = requests.post(
+        "https://api.geocoder.io/validate",
+        json={"address": address}
+    )
+    return resp.json()</span>
+
+<span class="c-gray"># If geocoder.io is slow or unresponsive:</span>
+<span class="c-red"># → Thread blocks indefinitely
+# → Worker pool: 8 threads
+# → Attacker sends 8 concurrent requests
+# → All 8 threads stuck waiting
+# → Thread pool exhausted
+# → Server returns 503 to everyone</span>
+
+<span class="c-amber"># Your app is "up" but can't serve anyone.
+# One slow dependency = full outage.</span>`
+        },
+        safe: {
+          label: '🟢 Explicit timeouts on every external call',
+          code: `<span class="c-green">import requests
+from requests.exceptions import Timeout
+
+def check_address(address):
+    try:
+        resp = requests.post(
+            "https://api.geocoder.io/validate",
+            json={"address": address},
+            timeout=(3, 10)  # connect=3s, read=10s
+        )
+        return resp.json()
+    except Timeout:
+        logger.warning("Geocoder timeout")
+        # Return cached or default result
+        return {"valid": False, "reason":
+                "Validation unavailable"}
+    except requests.RequestException as e:
+        logger.error(f"Geocoder error: {e}")
+        return {"valid": False, "reason":
+                "Service error"}</span>
+
+<span class="c-gray"># Thread is freed after 10 seconds max.
+# Worker pool stays available.
+# Users get a response, not a hang.</span>`
+        },
+        callout: { type: 'danger', text: '<strong>The hidden default:</strong> In Python\'s <code>requests</code> library, the default timeout is <code>None</code> — meaning wait forever. In Node.js <code>fetch</code>, it\'s also infinite by default. Java\'s <code>HttpURLConnection</code> defaults to infinite. Almost every HTTP client in every language defaults to "wait forever." You must explicitly override this in every call.' },
+        realWorld: { text: 'Resource exhaustion attacks against SaaS platforms are increasingly common. In 2025, IBM reported that the average cost of a denial-of-service incident reached $4.44 million globally. Missing timeouts are among the most frequently identified issues in penetration tests, because they turn any slow dependency into a single point of failure for the entire application.' }
+      },
+      {
+        title: 'Unbounded Input — Request Bombs',
+        narrative: `If your API accepts request bodies without a size limit, an attacker can send an enormous payload — a 10 GB JSON body, a deeply nested object, a ZIP bomb — that consumes all available memory or CPU on your server.\n\nSimilarly, if your code processes input without checking its size or depth first — iterating over an unbounded list, recursively parsing a deeply nested structure — a single malicious request can crash the process or trigger an out-of-memory kill.`,
+        vuln: {
+          label: '🔴 No input limits — memory bomb',
+          code: `<span class="c-gray"># Express.js API with no limits</span>
+<span class="c-red">app.use(express.json());  // no size limit
+
+app.post('/api/import', (req, res) =&gt; {
+  const items = req.body.items;
+  // No check on array length
+  for (const item of items) {
+    // Process each item...
+    db.insert(item);
+  }
+  res.json({ imported: items.length });
+});</span>
+
+<span class="c-gray"># Attacker sends:</span>
+<span class="c-red">{
+  "items": [... 50 million objects ...]
+}
+# → Server parses 2 GB of JSON into memory
+# → Node.js process hits memory limit
+# → Process killed by OOM killer
+# → Service down for all users</span>`
+        },
+        safe: {
+          label: '🟢 Bounded input with explicit limits',
+          code: `<span class="c-green">// 1. Limit request body size
+app.use(express.json({ limit: '1mb' }));
+
+app.post('/api/import', (req, res) =&gt; {
+  const items = req.body.items;
+  
+  // 2. Validate array exists and type
+  if (!Array.isArray(items)) {
+    return res.status(400)
+      .json({ error: "items must be array" });
+  }
+  
+  // 3. Enforce max items per request
+  if (items.length &gt; 1000) {
+    return res.status(400)
+      .json({ error: "Max 1000 items/batch" });
+  }
+  
+  // 4. Validate each item's shape
+  for (const item of items) {
+    if (!isValidItem(item)) {
+      return res.status(400)
+        .json({ error: "Invalid item format" });
+    }
+  }
+  
+  // Safe to process
+  db.bulkInsert(items);
+  res.json({ imported: items.length });
+});</span>
+
+<span class="c-gray"># Max 1 MB body. Max 1000 items.
+# Each item validated. No bombs.</span>`
+        },
+        callout: { type: 'info', text: '<strong>Defense in layers:</strong> Limit at the reverse proxy (Nginx: <code>client_max_body_size 1m</code>), at the framework (<code>express.json({ limit })</code>), AND in your application logic (array length checks, recursion depth limits). If any one layer is bypassed, the others catch it.' },
+        realWorld: { text: 'In 2024, multiple cloud providers reported a surge in application-layer DoS attacks that exploited unbounded input processing. Unlike traditional volumetric DDoS (which overwhelms bandwidth), these attacks send a small number of carefully crafted requests that consume disproportionate server resources — a single 100 MB JSON payload can consume gigabytes of memory during parsing.' }
+      },
+      {
+        title: 'Circuit Breakers — Automated Resilience',
+        narrative: `Individual timeouts protect single calls. But when a dependency starts failing, you don't want every request to wait for the timeout before failing — you want the system to <strong>stop trying</strong> until the dependency recovers.\n\nA <strong>circuit breaker</strong> tracks failure rates. When failures exceed a threshold, the circuit "opens" and immediately rejects calls to the failing service — no waiting, no resource consumption. Periodically, it lets a test request through. If the service is back, the circuit "closes" and traffic resumes.`,
+        vuln: {
+          label: '🔴 No circuit breaker — cascading failure',
+          code: `<span class="c-gray"># Auth service goes down at 2:03 AM</span>
+<span class="c-red">2:03 AM  Auth timeout (10s) × 200 req/s
+         = 2,000 threads blocked
+
+2:04 AM  Thread pool exhausted
+         API returns 503 to all users
+         → Payment service can't verify
+         → Notification service can't send
+         → Dashboard shows "down"
+
+2:05 AM  Retry storms begin
+         Each client retries 3x
+         → 200 req/s becomes 600 req/s
+         → Auth service (if recovering)
+           is now hammered 3x harder
+
+2:10 AM  Auth service recovers
+         But retry storm keeps it down
+         → Cascading failure loop</span>
+
+<span class="c-amber"># One service failure → total outage.
+# Retries make recovery harder.</span>`
+        },
+        safe: {
+          label: '🟢 Circuit breaker stops cascading failures',
+          code: `<span class="c-green"># Circuit breaker pattern
+auth_breaker = CircuitBreaker(
+    failure_threshold=5,    # 5 failures
+    recovery_timeout=30,    # wait 30s
+    expected_exception=ServiceTimeout
+)
+
+@auth_breaker
+def verify_token(token):
+    return auth_service.validate(token,
+                                 timeout=3)
+
+# Timeline with circuit breaker:
+# 2:03 AM  5 timeouts → breaker OPENS
+# 2:03 AM  Next 200 req/s → instant reject
+#           (no waiting, no threads blocked)
+#           Return cached auth or 503
+# 2:03:30  Breaker sends 1 test request
+#           → Auth still down → stay open
+# 2:04:00  Breaker sends 1 test request
+#           → Auth responds → CLOSE circuit
+# 2:04:01  Normal traffic resumes</span>
+
+<span class="c-gray"># Failure contained. No cascade.
+# Recovery is fast — no retry storm.</span>`
+        },
+        callout: { type: 'safe', text: '<strong>Circuit breakers protect both your users and your dependencies.</strong> Without one, a failing service is hammered by retries from every caller, making recovery harder. With one, the failing service gets breathing room to recover while your application serves degraded (but available) responses.' },
+        realWorld: { text: 'A10:2025 is new to the OWASP Top 10 in 2025, encompassing 24 CWEs and over 769,000 occurrences in OWASP\'s testing data. Its inclusion reflects a shift in how the security community views resilience: exception handling, resource management, and failure-mode design are no longer just reliability concerns — they are security controls. A system that crashes under load or silently drops security checks during resource pressure is exploitable.' }
+      }
+    ]
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentAttack = 0;
+let currentStep = 0;
+let completedSteps = {};
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const container = document.getElementById('main-content');
+
+  if (currentAttack === 3) {
+    renderSummary(container);
+    return;
+  }
+
+  const attack = attacks[currentAttack];
+  const step = attack.steps[currentStep];
+  const totalSteps = attack.steps.length;
+  const key = currentAttack + '-' + currentStep;
+  if (!completedSteps[key]) completedSteps[key] = false;
+
+  let html = '\
+    <div class="intro-card">\
+      <div class="intro-icon">' + attack.icon + '</div>\
+      <div>\
+        <div class="intro-label">' + attack.label + '</div>\
+        <div class="intro-title">' + attack.title + '</div>\
+        <div class="intro-desc">' + attack.desc + '</div>\
+        <div class="intro-tags">' +
+          attack.tags.map(function(t,i){ return '<span class="tag ' + attack.tagClasses[i] + '">' + t + '</span>'; }).join('') +
+        '</div>\
+      </div>\
+    </div>\
+    <div class="progress-wrap">\
+      <div class="progress-label">\
+        <span>Step ' + (currentStep+1) + ' of ' + totalSteps + ': ' + step.title + '</span>\
+        <span>' + Math.round(((currentStep+1)/totalSteps)*100) + '% complete</span>\
+      </div>\
+      <div class="progress-track"><div class="progress-fill" style="width:' + (((currentStep+1)/totalSteps)*100) + '%"></div></div>\
+    </div>\
+    <div class="step-dots">' +
+      attack.steps.map(function(s, i) {
+        var isDone = i < currentStep;
+        var isActive = i === currentStep;
+        var cls = isDone ? 'done' : isActive ? 'active' : '';
+        var lineCls = i < currentStep ? 'done' : '';
+        return '<div class="step-dot ' + cls + '" onclick="goToStep(' + i + ')" title="' + s.title + '">' + (isDone ? '✓' : (i+1)) + '</div>' +
+          (i < attack.steps.length - 1 ? '<div class="step-line ' + lineCls + '"></div>' : '');
+      }).join('') +
+    '</div>\
+    <div class="step-card">\
+      <div class="step-card-head">\
+        <span class="step-num-badge">Step ' + (currentStep+1) + '</span>\
+        <span class="step-title-text">' + step.title + '</span>\
+      </div>\
+      <div class="step-card-body">\
+        <div class="step-narrative">' + step.narrative.replace(/\n/g,'<br><br>') + '</div>\
+        <div class="split">\
+          <div class="panel vuln">\
+            <div class="panel-head">' + step.vuln.label + '</div>\
+            <div class="panel-body">' + step.vuln.code + '</div>\
+          </div>\
+          <div class="panel safe">\
+            <div class="panel-head">' + step.safe.label + '</div>\
+            <div class="panel-body">' + step.safe.code + '</div>\
+          </div>\
+        </div>' +
+        (step.callout ? '<div class="callout ' + step.callout.type + '">' + step.callout.text + '</div>' : '') +
+        (step.realWorld ? '<div class="real-world"><div class="rw-label">📰 Real-World Example</div><div class="rw-text">' + step.realWorld.text + '</div></div>' : '') +
+        '<div class="nav-row">\
+          <button class="btn btn-outline" onclick="prevStep()" ' + (currentStep === 0 ? 'disabled' : '') + '>← Previous</button>' +
+          (currentStep < totalSteps - 1
+            ? '<button class="btn btn-primary" onclick="nextStep()">Next Step →</button>'
+            : '<button class="btn btn-primary" onclick="finishAttack()">Complete ✓</button>') +
+        '</div>\
+      </div>\
+    </div>';
+
+  container.innerHTML = html;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderSummary(container) {
+  container.innerHTML = '\
+    <div class="complete-card">\
+      <div class="complete-icon">🎓</div>\
+      <div class="complete-title">Exceptional Conditions Summary</div>\
+      <div class="complete-text">You\'ve explored the three most critical categories of exceptional condition mishandling. Here\'s a quick reference of what you learned and how to defend against each one.</div>\
+    </div>\
+    <table class="summary-table">\
+      <thead>\
+        <tr>\
+          <th>Failure Mode</th>\
+          <th>How It\'s Exploited</th>\
+          <th>Key Defense</th>\
+        </tr>\
+      </thead>\
+      <tbody>\
+        <tr>\
+          <td><strong>🚪 Failing Open</strong></td>\
+          <td>Attacker triggers an error in a security check (malformed token, timeout). The catch block defaults to "allow," granting access without verification.</td>\
+          <td>Default-deny architecture: every exception path denies access. Security checks must prove access, not disprove denial.</td>\
+        </tr>\
+        <tr>\
+          <td><strong>💥 Unhandled Exceptions</strong></td>\
+          <td>Empty catch blocks silently skip security controls. Null pointer dereferences crash services. Both create exploitable unknown states.</td>\
+          <td>No empty catch blocks. Validate all inputs. Implement graceful degradation — reduce functionality, never security.</td>\
+        </tr>\
+        <tr>\
+          <td><strong>⏱️ Resource Exhaustion</strong></td>\
+          <td>Missing timeouts let threads hang forever. Unbounded inputs consume all memory. Retry storms cascade failures across services.</td>\
+          <td>Explicit timeouts on every external call. Input size limits at every layer. Circuit breakers to contain failures.</td>\
+        </tr>\
+      </tbody>\
+    </table>\
+    <div class="callout safe" style="margin-top:20px;">\
+      <strong>The common thread:</strong> A10:2025 is about what happens when things go wrong. Most security testing focuses on the happy path — valid inputs, working services, expected conditions. Attackers focus on the unhappy path — malformed inputs, failing services, edge cases. Secure systems handle both paths explicitly. If your code has a catch block, a timeout, or a null check missing, that gap is an attack surface.\
+    </div>\
+    <div class="nav-row" style="margin-top:24px;">\
+      <button class="btn btn-outline" onclick="selectAttack(0)">↺ Start Over</button>\
+      <button class="btn btn-primary" onclick="selectAttack(currentAttack > 0 ? currentAttack - 1 : 0)">← Review Last Section</button>\
+    </div>';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────────────────
+function selectAttack(idx) {
+  currentAttack = idx;
+  currentStep = 0;
+  document.querySelectorAll('.attack-tab').forEach(function(btn, i) {
+    btn.classList.toggle('active', i === idx);
+  });
+  render();
+}
+
+function nextStep() {
+  var attack = attacks[currentAttack];
+  if (currentStep < attack.steps.length - 1) {
+    currentStep++;
+    render();
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    currentStep--;
+    render();
+  }
+}
+
+function goToStep(idx) {
+  currentStep = idx;
+  render();
+}
+
+function finishAttack() {
+  var nextAttackIdx = currentAttack + 1;
+  if (nextAttackIdx <= 3) {
+    selectAttack(nextAttackIdx);
+  }
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
