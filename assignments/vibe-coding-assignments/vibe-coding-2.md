@@ -76,10 +76,10 @@ Like assignment 1, the first output used a darker, more technical color scheme t
 
 ## 5. References
 
-OWASP. (2025). *OWASP Top 10:2025 — A10: Mishandling of exceptional conditions*. https://owasp.org/Top10/2025/
+- OWASP. (2025). *OWASP Top 10:2025*. https://owasp.org/Top10/2025/
 
-Palo Alto Networks. (2025, February). *CVE-2025-0108: PAN-OS management web interface authentication bypass vulnerability*. Palo Alto Networks Security Advisories. *[Verify URL from Palo Alto's advisory page before submitting.]*
+- Palo Alto Networks. (2025, February 11). *CVE-2025-0108: PAN-OS: Authentication bypass in the management web interface*. https://security.paloaltonetworks.com/CVE-2025-0108[web:9]
 
-OpenPrinting CUPS. (2025). *CVE-2025-58060: Authentication check bypass in CUPS*. *[Verify source and URL from NVD before submitting.]*
+- OpenPrinting. (2025). *CVE-2025-58060: Authentication bypass in CUPS*. https://github.com/OpenPrinting/cups/security/advisories/GHSA-4c68-qgrh-rmmq
 
-Satter, R., & Pearson, J. (2024, July 19). Global tech outage caused by CrowdStrike software update. *Reuters*. *[Verify exact URL and author names before submitting.]*
+- Satter, R., & Pearson, J. (2024, July 19). *Global tech outage caused by CrowdStrike software update*. Reuters. https://www.reuters.com/technology/crowdstrike-says-actively-working-with-customers-impacted-by-outage-2024-07-19/
