@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Injection — A05:2025 | OWASP Security Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:        #15101f;
+  --surface:    #ffffff;
+  --surface2:   #faf9fc;
+  --surface3:   #f1edf7;
+  --border:     #e6e1f0;
+  --border2:    #d4cce6;
+
+  --violet:     #6c2bd9;
+  --violet2:    #5421b3;
+  --magenta:    #d6248a;
+  --grad:       linear-gradient(135deg, #6c2bd9 0%, #a31ea8 55%, #d6248a 100%);
+  --grad-soft:  linear-gradient(135deg, rgba(108,43,217,.08) 0%, rgba(214,36,138,.08) 100%);
+
+  --red:        #d4304a;
+  --red-light:  #fcebee;
+  --red-mid:    #f2bcc7;
+  --amber:      #c97a16;
+  --green:      #1f8a5c;
+  --green-light:#e9f7f0;
+  --green-mid:  #aedfc8;
+
+  --text:       #1c1730;
+  --text2:      #564e6e;
+  --text3:      #897fa3;
+  --text4:      #b6aecb;
+
+  --shadow:     0 2px 8px rgba(28,23,48,.06), 0 8px 28px rgba(28,23,48,.07);
+  --shadow-sm:  0 1px 3px rgba(28,23,48,.05), 0 2px 8px rgba(28,23,48,.04);
+  --shadow-lg:  0 8px 30px rgba(108,43,217,.16), 0 2px 8px rgba(108,43,217,.08);
+  --radius:     14px;
+  --radius-sm:  9px;
+  --red-text:   #8a1f30;
+  --green-text: #115a3c;
+  --panel-bg:   #fbfafd;
+  --danger-banner-bg: #fdf1f3;
+  --safe-banner-bg:   #eef9f3;
+  --console-bg: #1a0f15;
+  --q-comment:  #7c7390;
+  --info-text:  #432092;
+}
+
+body.dark-mode {
+  --ink:        #0e0c14;
+  --surface:    #232030;
+  --surface2:   #1c1926;
+  --surface3:   #2a2638;
+  --border:     #3a3548;
+  --border2:    #4a4460;
+
+  --violet:     #9b6bf0;
+  --violet2:    #b48af5;
+  --magenta:    #ec5ab0;
+
+  --red:        #ff6b80;
+  --red-light:  #3a1a22;
+  --red-mid:    #6b2c3a;
+  --amber:      #f0b35c;
+  --green:      #4ad08a;
+  --green-light:#1a3328;
+  --green-mid:  #2d5c44;
+
+  --text:       #f0eef7;
+  --text2:      #c4bdd9;
+  --text3:      #8d84a8;
+  --text4:      #5e577a;
+
+  --shadow:     0 2px 8px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.2);
+  --red-text:   #ff9aac;
+  --green-text: #7fe8b4;
+  --panel-bg:   #1c1926;
+  --danger-banner-bg: #3a1a22;
+  --safe-banner-bg:   #1a3328;
+  --console-bg: #1a0f15;
+  --q-comment:  #9089ab;
+  --info-text:  #d8c4f7;
+  --grad-soft:  linear-gradient(135deg, rgba(155,107,240,.18) 0%, rgba(236,90,176,.18) 100%);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--surface2);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+svg.icon { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; vertical-align:middle; }
+svg.icon-lg { width:28px; height:28px; stroke-width:1.6; }
+
+.header {
+  background: var(--ink);
+  background-image: radial-gradient(circle at 15% 0%, rgba(214,36,138,.35), transparent 45%),
+                     radial-gradient(circle at 85% 100%, rgba(108,43,217,.35), transparent 45%);
+  color: white;
+  padding: 0 28px;
+}
+.header-inner { max-width:1140px; margin:0 auto; display:flex; align-items:center; gap:14px; padding:18px 0; flex-wrap:wrap; }
+.header-mark { width:36px; height:36px; border-radius:10px; background:var(--grad); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:var(--shadow-lg); }
+.header-mark svg { width:19px; height:19px; stroke:white; stroke-width:2; }
+.header-titles { display:flex; flex-direction:column; gap:1px; }
+.header-title { font-family:'Sora', sans-serif; font-size:18px; font-weight:700; color:white; letter-spacing:-.01em; }
+.header-badge { font-size:11px; font-weight:600; color:#e3b8e0; letter-spacing:.06em; text-transform:uppercase; }
+.header-sub { font-size:13px; color:rgba(255,255,255,.45); margin-left:auto; display:flex; align-items:center; gap:7px; }
+.theme-toggle { background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:white; width:36px; height:36px; border-radius:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; flex-shrink:0; }
+.theme-toggle:hover { background:rgba(255,255,255,.15); }
+.theme-toggle svg { width:17px; height:17px; stroke:white; }
+
+.view-selector { background:var(--surface); border-bottom:1px solid var(--border); padding:0 28px; }
+.view-selector-inner { max-width:1140px; margin:0 auto; display:flex; gap:4px; }
+.view-tab { flex-shrink:0; background:none; border:none; border-bottom:3px solid transparent; color:var(--text3); font-family:'Manrope',sans-serif; font-size:14px; font-weight:600; padding:17px 20px 14px; cursor:pointer; transition:all .2s; display:flex; align-items:center; gap:9px; }
+.view-tab svg { stroke:var(--text4); transition:stroke .2s; }
+.view-tab:hover { color:var(--text); }
+.view-tab:hover svg { stroke:var(--violet); }
+.view-tab.active { color:var(--text); border-bottom-color:var(--magenta); }
+.view-tab.active svg { stroke:var(--magenta); }
+
+.attack-selector { background:var(--surface3); border-bottom:1px solid var(--border); padding:0 28px; }
+.attack-selector-inner { max-width:1140px; margin:0 auto; display:flex; gap:8px; padding:14px 0; overflow-x:auto; scrollbar-width:none; }
+.attack-selector-inner::-webkit-scrollbar { display:none; }
+.attack-tab { flex-shrink:0; background:var(--surface); border:1.5px solid var(--border); color:var(--text2); font-family:'Manrope',sans-serif; font-size:13px; font-weight:600; padding:9px 16px 9px 13px; border-radius:30px; cursor:pointer; transition:all .2s; white-space:nowrap; display:flex; align-items:center; gap:8px; }
+.attack-tab svg { stroke:var(--text3); transition:stroke .2s; }
+.attack-tab:hover { border-color:var(--violet); color:var(--violet); }
+.attack-tab:hover svg { stroke:var(--violet); }
+.attack-tab.active { background:var(--ink); border-color:var(--ink); color:white; }
+.attack-tab.active svg { stroke:#e3b8e0; }
+
+.main { max-width:1140px; margin:0 auto; padding:30px 28px 64px; }
+.view-panel { display:none; }
+.view-panel.active { display:block; }
+
+.intro-card { background:var(--ink); background-image:radial-gradient(circle at 100% 0%, rgba(214,36,138,.25), transparent 50%); border-radius:var(--radius); padding:28px 30px; margin-bottom:26px; box-shadow:var(--shadow-lg); display:flex; gap:22px; align-items:flex-start; position:relative; overflow:hidden; }
+.intro-icon-wrap { width:52px; height:52px; border-radius:14px; background:var(--grad); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 18px rgba(108,43,217,.4); }
+.intro-icon-wrap svg { stroke:white; }
+.intro-label { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#e3b8e0; margin-bottom:6px; }
+.intro-title { font-family:'Sora',sans-serif; font-size:23px; font-weight:700; color:white; margin-bottom:10px; letter-spacing:-.01em; }
+.intro-desc { color:rgba(255,255,255,.7); font-size:14px; line-height:1.7; max-width:700px; }
+.intro-tags { display:flex; gap:7px; flex-wrap:wrap; margin-top:14px; }
+.tag { font-size:11.5px; font-weight:600; padding:4px 12px; border-radius:20px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.07); color:rgba(255,255,255,.85); }
+
+.progress-wrap { margin-bottom:22px; }
+.progress-label { display:flex; justify-content:space-between; font-size:12px; color:var(--text3); margin-bottom:7px; font-weight:500; }
+.progress-label span.hi { font-weight:700; color:var(--text); }
+.progress-track { height:6px; background:var(--border); border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; background:var(--grad); border-radius:4px; transition:width .4s ease; }
+
+.step-dots { display:flex; gap:9px; align-items:center; margin-bottom:22px; flex-wrap:wrap; }
+.step-dot { width:30px; height:30px; border-radius:50%; border:2px solid var(--border2); background:var(--surface); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--text3); cursor:pointer; transition:all .2s; flex-shrink:0; }
+.step-dot.done { background:var(--grad); border-color:transparent; color:white; }
+.step-dot.done svg { width:14px; height:14px; stroke:white; stroke-width:2.5; }
+.step-dot.active { background:var(--ink); border-color:var(--ink); color:white; box-shadow:0 0 0 4px rgba(28,23,48,.1); }
+.step-line { flex:1; min-width:18px; max-width:44px; height:2px; background:var(--border); border-radius:1px; }
+.step-line.done { background:var(--violet); }
+
+.step-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; margin-bottom:22px; }
+.step-card-head { background:var(--surface3); border-bottom:1px solid var(--border); padding:16px 22px; display:flex; align-items:center; gap:13px; }
+.step-num-badge { background:var(--grad); color:white; font-size:11px; font-weight:700; padding:3px 11px; border-radius:20px; letter-spacing:.02em; }
+.step-title-text { font-family:'Sora',sans-serif; font-size:16px; font-weight:700; color:var(--text); letter-spacing:-.01em; }
+.step-card-body { padding:24px; }
+.step-narrative { font-size:14px; color:var(--text2); line-height:1.75; margin-bottom:20px; }
+.step-narrative strong { color:var(--text); font-weight:700; }
+.step-narrative code { background:var(--surface3); padding:1px 7px; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--violet2); font-weight:500; }
+
+.split { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+@media (max-width:680px) { .split { grid-template-columns:1fr; } }
+.panel { border-radius:var(--radius-sm); overflow:hidden; border:1.5px solid; }
+.panel.vuln { border-color:var(--red-mid); }
+.panel.safe { border-color:var(--green-mid); }
+.panel-head { padding:10px 15px; font-size:12px; font-weight:700; letter-spacing:.03em; display:flex; align-items:center; gap:9px; }
+.panel.vuln .panel-head { background:var(--red-light); color:var(--red); }
+.panel.safe .panel-head { background:var(--green-light); color:var(--green); }
+.panel-head svg { width:15px; height:15px; }
+.panel-body { background:var(--panel-bg); padding:15px; font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.75; white-space:pre-wrap; word-break:break-word; min-height:80px; color:var(--text); }
+
+.c-gray  { color:var(--text3); }
+.c-red   { color:var(--red); }
+.c-green { color:var(--green); }
+.c-amber { color:var(--amber); }
+.c-navy  { color:var(--text); font-weight:600; }
+.c-bold  { font-weight:700; }
+
+.callout { border-left:3px solid; border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:13px 17px; font-size:13.5px; line-height:1.65; margin:16px 0; display:flex; gap:11px; align-items:flex-start; }
+.callout svg { margin-top:1px; flex-shrink:0; }
+.callout.danger { border-color:var(--red); background:var(--red-light); color:var(--red-text); }
+.callout.danger svg { stroke:var(--red); }
+.callout.safe   { border-color:var(--green); background:var(--green-light); color:var(--green-text); }
+.callout.safe svg { stroke:var(--green); }
+.callout.info   { border-color:var(--violet); background:var(--grad-soft); color:var(--info-text); }
+.callout.info svg { stroke:var(--violet); }
+.callout strong { font-weight:700; }
+.callout code { background:rgba(0,0,0,.07); padding:1px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; }
+
+.nav-row { display:flex; justify-content:space-between; align-items:center; margin-top:8px; gap:12px; flex-wrap:wrap; }
+.btn { font-family:'Manrope',sans-serif; font-size:14px; font-weight:600; padding:11px 24px; border-radius:10px; cursor:pointer; border:1.5px solid; transition:all .15s; display:inline-flex; align-items:center; gap:9px; }
+.btn-primary { background:var(--ink); border-color:var(--ink); color:white; }
+.btn-primary:hover { background:var(--violet2); border-color:var(--violet2); }
+.btn-gradient { background:var(--grad); border:none; color:white; box-shadow:0 4px 14px rgba(108,43,217,.3); }
+.btn-gradient:hover { filter:brightness(1.08); }
+.btn-outline { background:white; border-color:var(--border2); color:var(--text2); }
+.btn-outline:hover { border-color:var(--violet); color:var(--violet); }
+.btn:disabled { opacity:.3; cursor:not-allowed; }
+
+.demo-grid { display:grid; grid-template-columns:290px 1fr; gap:22px; }
+@media (max-width:800px) { .demo-grid { grid-template-columns:1fr; } }
+.demo-sidebar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm); align-self:start; }
+.sidebar-label { font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--text3); margin-bottom:11px; display:flex; align-items:center; gap:7px; }
+.preset-btn { width:100%; text-align:left; background:var(--surface3); border:1.5px solid var(--border); color:var(--text2); font-family:'Manrope',sans-serif; font-size:12.5px; padding:11px 13px; cursor:pointer; border-radius:var(--radius-sm); margin-bottom:8px; transition:all .15s; line-height:1.4; }
+.preset-btn:hover { border-color:var(--violet); background:var(--grad-soft); color:var(--violet2); }
+.preset-btn.active { background:var(--ink); border-color:var(--ink); color:white; }
+.preset-name { font-weight:700; font-size:12.5px; margin-bottom:3px; }
+.preset-code { font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.75; word-break:break-all; }
+.preset-divider { border-top:1px solid var(--border); margin:18px 0 15px; }
+.mode-toggle { display:flex; gap:6px; margin-bottom:18px; background:var(--surface3); border-radius:10px; padding:4px; }
+.mode-btn { flex:1; background:none; border:none; font-family:'Manrope',sans-serif; font-size:12px; font-weight:700; padding:8px 10px; border-radius:7px; cursor:pointer; color:var(--text3); transition:all .15s; display:flex; align-items:center; justify-content:center; gap:6px; }
+.mode-btn svg { width:13px; height:13px; }
+.mode-btn.active { background:var(--ink); color:white; }
+.mode-btn.active.mode-vuln { background:var(--red); }
+.mode-btn.active.mode-safe { background:var(--green); }
+
+.demo-search-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow-sm); margin-bottom:18px; }
+.search-label { font-size:12.5px; font-weight:700; color:var(--text2); margin-bottom:10px; display:flex; align-items:center; gap:9px; letter-spacing:.01em; }
+.search-label svg { stroke:var(--violet); }
+.search-row { display:flex; gap:10px; }
+.search-input { flex:1; background:var(--surface2); border:1.5px solid var(--border2); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:13px; padding:11px 15px; border-radius:10px; outline:none; transition:border-color .15s; }
+.search-input:focus { border-color:var(--violet); }
+.search-btn { background:var(--grad); border:none; color:white; font-family:'Manrope',sans-serif; font-size:13px; font-weight:700; padding:11px 22px; border-radius:10px; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:8px; }
+.search-btn:hover { filter:brightness(1.08); }
+
+.query-view { margin-top:16px; background:var(--ink); color:#d8d2e8; border-radius:var(--radius-sm); padding:15px 17px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.7; overflow-x:auto; white-space:pre-wrap; word-break:break-all; }
+.query-label { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#b89fd9; margin-bottom:9px; display:flex; align-items:center; gap:7px; }
+.query-label svg { width:12px; height:12px; }
+.q-kw     { color:#7fd4f0; font-weight:600; }
+.q-str    { color:#9eea7a; }
+.q-inject { color:#ff7a96; font-weight:700; background:rgba(255,122,150,.18); padding:0 3px; border-radius:3px; }
+.q-table  { color:#f5b15c; }
+.q-amber  { color:#f5b15c; }
+.q-comment{ color:var(--q-comment); font-style:italic; }
+.q-lit    { color:#d8d2e8; }
+
+.results-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+.results-head { padding:11px 17px; font-size:12px; font-weight:700; letter-spacing:.03em; display:flex; align-items:center; gap:10px; }
+.results-head svg { width:15px; height:15px; }
+.results-head.danger { background:var(--red-light); color:var(--red); }
+.results-head.safe   { background:var(--green-light); color:var(--green); }
+.results-head.neutral{ background:var(--surface3); color:var(--text2); }
+.result-count { margin-left:auto; font-size:11px; font-weight:600; opacity:.8; }
+.results-body { padding:0; max-height:380px; overflow-y:auto; }
+
+table.result-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+table.result-table th { background:var(--surface3); color:var(--text3); font-weight:700; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase; padding:9px 14px; text-align:left; border-bottom:1px solid var(--border); position:sticky; top:0; }
+table.result-table td { padding:9px 14px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:12px; }
+table.result-table tr.leaked td { background:var(--red-light); color:var(--red-text); }
+table.result-table tr.leaked td.flag-cell { font-weight:700; color:var(--red); }
+table.result-table tr:hover td { background:var(--surface3); }
+
+.empty-state { padding:44px 22px; text-align:center; color:var(--text3); font-size:13px; line-height:1.7; }
+.empty-state svg { display:block; margin:0 auto 12px; stroke:var(--text4); width:30px; height:30px; }
+
+.alert-banner { padding:13px 17px; font-size:13px; font-weight:500; display:flex; align-items:flex-start; gap:11px; }
+.alert-banner svg { margin-top:1px; flex-shrink:0; }
+.alert-banner.danger { background:var(--danger-banner-bg); color:var(--red); border-top:1px solid var(--red-mid); }
+.alert-banner.danger svg { stroke:var(--red); }
+.alert-banner.safe   { background:var(--safe-banner-bg); color:var(--green); border-top:1px solid var(--green-mid); }
+.alert-banner.safe svg { stroke:var(--green); }
+
+.login-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px; box-shadow:var(--shadow-sm); max-width:400px; margin-bottom:18px; }
+.login-field { margin-bottom:14px; }
+.login-field label { display:block; font-size:12px; font-weight:700; color:var(--text2); margin-bottom:7px; }
+.login-field input { width:100%; background:var(--surface2); color:var(--text); border:1.5px solid var(--border2); font-family:'JetBrains Mono',monospace; font-size:13px; padding:10px 13px; border-radius:10px; outline:none; }
+.login-field input::placeholder, .search-input::placeholder { color:var(--text4); }
+.login-field input:focus { border-color:var(--violet); }
+.login-submit { width:100%; background:var(--grad); border:none; color:white; font-family:'Manrope',sans-serif; font-size:13.5px; font-weight:700; padding:11px; border-radius:10px; cursor:pointer; margin-top:6px; display:flex; align-items:center; justify-content:center; gap:8px; }
+.login-submit:hover { filter:brightness(1.08); }
+
+.login-result { border-radius:var(--radius-sm); padding:15px 17px; font-size:13.5px; margin-top:16px; display:flex; gap:11px; align-items:flex-start; }
+.login-result svg { margin-top:1px; flex-shrink:0; }
+.login-result.success { background:var(--red-light); border:1.5px solid var(--red-mid); color:var(--red-text); }
+.login-result.success svg { stroke:var(--red); }
+.login-result.fail { background:var(--surface3); border:1.5px solid var(--border); color:var(--text2); }
+.login-result.fail svg { stroke:var(--text3); }
+.login-result.blocked { background:var(--green-light); border:1.5px solid var(--green-mid); color:var(--green-text); }
+.login-result.blocked svg { stroke:var(--green); }
+
+.danger-zone { background:var(--console-bg); border-radius:var(--radius-sm); padding:17px; margin-top:16px; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+.dz-line { color:#ff7a96; line-height:1.8; }
+
+@media (max-width:600px) {
+  .header-sub { display:none; }
+  .intro-card { flex-direction:column; gap:14px; padding:22px; }
+  .intro-title { font-size:19px; }
+  .step-card-body { padding:17px; }
+  .main { padding:18px 16px 44px; }
+  .btn { font-size:13px; padding:10px 18px; }
+  .search-row { flex-direction:column; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13Z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8Z"/></symbol>
+    <symbol id="i-lock-open" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 17v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-bomb" viewBox="0 0 24 24"><circle cx="11" cy="14" r="7"/><path d="M16 9l2-2m0 0 2 1m-2-1-1-2M18.5 4.5l1 1"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.6 2 18a1 1 0 0 0 .9 1.5h18.2a1 1 0 0 0 .9-1.5L13.7 3.6a1 1 0 0 0-1.8 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-database" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 17 6-5-6-5"/><path d="M12 19h8"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9m-2 5 2 2m-6-2 2 2"/></symbol>
+    <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v5h-5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></symbol>
+  </defs>
+</svg>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="header-mark"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <div class="header-titles">
+      <div class="header-title">SQL Injection Security Lab</div>
+      <div class="header-badge">OWASP A05:2025</div>
+    </div>
+    <div class="header-sub"><svg class="icon" style="width:13px;height:13px;stroke:rgba(255,255,255,.45)"><use href="#i-bolt"/></svg>Interactive Learning Tool</div>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon" id="theme-icon"><use href="#i-moon"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="view-selector">
+  <div class="view-selector-inner">
+    <button class="view-tab active" onclick="selectView('walkthrough')"><svg class="icon"><use href="#i-book"/></svg>Educational Walkthrough</button>
+    <button class="view-tab" onclick="selectView('demo')"><svg class="icon"><use href="#i-bolt"/></svg>Interactive Demo</button>
+  </div>
+</div>
+
+<div class="attack-selector" id="attack-selector" style="display:none;">
+  <div class="attack-selector-inner">
+    <button class="attack-tab active" onclick="selectAttackDemo(0)"><svg class="icon" style="width:14px;height:14px"><use href="#i-lock-open"/></svg>Authentication Bypass</button>
+    <button class="attack-tab" onclick="selectAttackDemo(1)"><svg class="icon" style="width:14px;height:14px"><use href="#i-upload"/></svg>UNION Data Exfiltration</button>
+    <button class="attack-tab" onclick="selectAttackDemo(2)"><svg class="icon" style="width:14px;height:14px"><use href="#i-bomb"/></svg>Stacked Queries (DROP TABLE)</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="view-panel active" id="view-walkthrough"></div>
+  <div class="view-panel" id="view-demo"></div>
+</div>
+
+<script>
+const walkthrough = {
+  iconId: 'i-database',
+  label: 'OWASP A05:2025',
+  title: 'How SQL Injection Works',
+  desc: 'SQL injection happens when user input is inserted directly into a database query without being separated from the query\'s structure. The database can\'t tell the difference between data and code — so attacker-supplied text gets executed as part of the command itself.',
+  tags: ['Critical severity', 'A05:2025', 'Most exploited vulnerability class'],
+  steps: [
+    {
+      title: 'Data vs. Code — Why Databases Get Confused',
+      narrative: `A SQL query is just a string of text sent to the database. When a web app builds that string by gluing together a fixed command with user input, the database has no way to know which part was "supposed" to be a value and which part was "supposed" to be a command.\n\nNormally, when a user searches for a product, the app builds a query like this — the user's input fills in the blank exactly where a value is expected.`,
+      vuln: { icon: 'i-terminal', label: 'Normal, expected input', code: `<span class="c-gray"># User types: </span><span class="c-green">laptop</span>\n\n<span class="c-gray">Query the app builds:</span>\n<span class="c-navy">SELECT * FROM products\nWHERE name = '</span><span class="c-green">laptop</span><span class="c-navy">'</span>\n\n<span class="c-gray"># The database reads this exactly as intended:\n# "find rows where name equals laptop"</span>` },
+      safe: { icon: 'i-shield-check', label: 'Same query, value clearly separated', code: `<span class="c-gray"># Conceptually, what SHOULD happen:</span>\n\n<span class="c-navy">SELECT * FROM products\nWHERE name = </span><span class="c-amber">?</span>\n\n<span class="c-gray">Parameters: [</span><span class="c-green">"laptop"</span><span class="c-gray">]</span>\n\n<span class="c-gray"># The value travels separately from the\n# command. The database treats it as DATA\n# no matter what it contains.</span>` },
+      callout: { type: 'info', icon: 'i-info', text: 'The root problem is <strong>mixing instructions and data in the same string</strong>. Every SQL injection vulnerability traces back to this one design mistake.' }
+    },
+    {
+      title: 'Breaking Out of the String',
+      narrative: `Now imagine the same input field, but the user types a single quote ( <code>'</code> ) as part of their input. In SQL, a single quote ends a text value. If the app blindly inserts that quote into the query string, the attacker has just ended the value early — and anything they type after it becomes part of the SQL command itself, not data.`,
+      vuln: { icon: 'i-alert', label: 'Attacker input breaks the string', code: `<span class="c-gray"># User types: </span><span class="c-red">' OR '1'='1</span>\n\n<span class="c-gray">Query the app builds:</span>\n<span class="c-navy">SELECT * FROM products\nWHERE name = '</span><span class="c-red">' OR '1'='1</span><span class="c-navy">'</span>\n\n<span class="c-gray"># The closing quote in the attacker's input\n# ends the string early. Everything after\n# it is interpreted as SQL, not text.</span>` },
+      safe: { icon: 'i-shield-check', label: 'Parameterized query — same input, no effect', code: `<span class="c-gray"># User types: </span><span class="c-red">' OR '1'='1</span>\n\n<span class="c-navy">SELECT * FROM products\nWHERE name = </span><span class="c-amber">?</span>\n\n<span class="c-gray">Parameters: [</span><span class="c-red">"' OR '1'='1"</span><span class="c-gray">]</span>\n\n<span class="c-gray"># The entire string — quotes and all — is\n# treated as a single literal value. It is\n# never interpreted as SQL syntax.</span>` },
+      callout: { type: 'danger', icon: 'i-alert', text: '<strong>This is the moment of compromise.</strong> One unescaped quote character is often the entire difference between a safe app and a breached one.' }
+    },
+    {
+      title: 'The Result — Logic the Developer Never Intended',
+      narrative: `Once the attacker controls part of the SQL syntax, they can rewrite the query's logic entirely. The classic example: <code>OR '1'='1'</code> is always true, so the <code>WHERE</code> clause matches every row in the table instead of just one. This same technique can bypass logins, dump entire tables, or in the worst case, delete data.`,
+      vuln: { icon: 'i-database', label: 'What the database actually executes', code: `<span class="c-navy">SELECT * FROM products\nWHERE name = '' OR '1'='1'</span>\n\n<span class="c-gray"># Breaking this down:\n#   name = ''          matches nothing\n#   OR '1'='1'           always TRUE\n#\n# Because of OR, the whole WHERE clause\n# evaluates to TRUE for every row.</span>\n\n<span class="c-red c-bold">Result: ALL rows returned,\nnot just the one product searched for.</span>` },
+      safe: { icon: 'i-list', label: 'Defense-in-depth checklist', code: `<span class="c-green">Use parameterized queries / prepared\nstatements for every database call\n\nUse an ORM that parameterizes by default\n(SQLAlchemy, Django ORM, Sequelize)\n\nApply least-privilege DB accounts — a\nsearch feature shouldn't have DELETE rights\n\nValidate and constrain input types\n(e.g. expect a number, reject letters)\n\nUse a WAF as a secondary layer, never\nas the only layer</span>` },
+      callout: { type: 'safe', icon: 'i-shield-check', text: '<strong>The fix is structural, not cosmetic.</strong> Escaping quotes or filtering "bad words" can be bypassed. Parameterized queries remove the vulnerability at the architecture level — user input is never given the chance to be interpreted as code.' }
+    }
+  ]
+};
+
+let currentStep = 0;
+
+function renderWalkthrough() {
+  const container = document.getElementById('view-walkthrough');
+  const step = walkthrough.steps[currentStep];
+  const totalSteps = walkthrough.steps.length;
+
+  container.innerHTML = `
+    <div class="intro-card">
+      <div class="intro-icon-wrap"><svg class="icon icon-lg"><use href="#${walkthrough.iconId}"/></svg></div>
+      <div>
+        <div class="intro-label">${walkthrough.label}</div>
+        <div class="intro-title">${walkthrough.title}</div>
+        <div class="intro-desc">${walkthrough.desc}</div>
+        <div class="intro-tags">${walkthrough.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Step ${currentStep+1} of ${totalSteps}: ${step.title}</span>
+        <span class="hi">${Math.round(((currentStep+1)/totalSteps)*100)}% complete</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${((currentStep+1)/totalSteps)*100}%"></div></div>
+    </div>
+
+    <div class="step-dots">
+      ${walkthrough.steps.map((s, i) => {
+        const isDone = i < currentStep;
+        const isActive = i === currentStep;
+        const cls = isDone ? 'done' : isActive ? 'active' : '';
+        const lineCls = i < currentStep ? 'done' : '';
+        return `
+          <div class="step-dot ${cls}" onclick="goToStep(${i})" title="${s.title}">${isDone ? '<svg class=\"icon\"><use href=\"#i-check\"/></svg>' : i+1}</div>
+          ${i < walkthrough.steps.length - 1 ? `<div class="step-line ${lineCls}"></div>` : ''}
+        `;
+      }).join('')}
+    </div>
+
+    <div class="step-card">
+      <div class="step-card-head">
+        <span class="step-num-badge">Step ${currentStep+1}</span>
+        <span class="step-title-text">${step.title}</span>
+      </div>
+      <div class="step-card-body">
+        <div class="step-narrative">${step.narrative.replace(/\n/g,'<br><br>')}</div>
+
+        <div class="split">
+          <div class="panel vuln">
+            <div class="panel-head"><svg class="icon"><use href="#${step.vuln.icon}"/></svg>${step.vuln.label}</div>
+            <div class="panel-body">${step.vuln.code}</div>
+          </div>
+          <div class="panel safe">
+            <div class="panel-head"><svg class="icon"><use href="#${step.safe.icon}"/></svg>${step.safe.label}</div>
+            <div class="panel-body">${step.safe.code}</div>
+          </div>
+        </div>
+
+        ${step.callout ? `<div class="callout ${step.callout.type}"><svg class="icon"><use href="#${step.callout.icon}"/></svg><span>${step.callout.text}</span></div>` : ''}
+
+        <div class="nav-row">
+          <button class="btn btn-outline" onclick="prevStep()" ${currentStep === 0 ? 'disabled' : ''}><svg class="icon"><use href="#i-arrow-left"/></svg>Previous</button>
+          ${currentStep < totalSteps - 1
+            ? `<button class="btn btn-primary" onclick="nextStep()">Next Step<svg class="icon"><use href="#i-arrow-right"/></svg></button>`
+            : `<button class="btn btn-gradient" onclick="selectView('demo')"><svg class="icon"><use href="#i-bolt"/></svg>Try the Interactive Demo</button>`
+          }
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function nextStep() { if (currentStep < walkthrough.steps.length - 1) { currentStep++; renderWalkthrough(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function prevStep() { if (currentStep > 0) { currentStep--; renderWalkthrough(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function goToStep(i) { currentStep = i; renderWalkthrough(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+const DB_USERS = [
+  { id: 1, username: 'admin',    password: 'S3cr3tAdm!n2026',  email: 'admin@company.com',    is_admin: true  },
+  { id: 2, username: 'jsmith',   password: 'password123',      email: 'jsmith@company.com',    is_admin: false },
+  { id: 3, username: 'mthompson',password: 'Th0mps0n!',        email: 'mthompson@company.com', is_admin: false },
+  { id: 4, username: 'klee',     password: 'KLee_2025secure',  email: 'klee@company.com',      is_admin: false },
+];
+
+const DB_PRODUCTS = [
+  { id: 1, name: 'Laptop Stand',     price: 34.99,  category: 'Office'  },
+  { id: 2, name: 'Wireless Mouse',   price: 19.99,  category: 'Office'  },
+  { id: 3, name: 'USB-C Hub',        price: 28.50,  category: 'Office'  },
+  { id: 4, name: 'Mechanical Keyboard', price: 89.00, category: 'Office' },
+];
+
+let demoMode = 'vulnerable';
+let currentAttackDemo = 0;
+
+const attackConfigs = [
+  { key: 'auth', icon: 'i-lock-open', name: 'Authentication Bypass', description: 'Try to log in without knowing a valid password by injecting SQL into the login form.',
+    presets: [ { name: 'Classic OR bypass', code: `' OR '1'='1` }, { name: 'Comment out password check', code: `admin'--` }, { name: 'Always-true with comment', code: `' OR 1=1--` } ],
+    placeholder: "Try: ' OR '1'='1" },
+  { key: 'union', icon: 'i-upload', name: 'UNION Data Exfiltration', description: 'Use UNION SELECT to pull data out of a completely different table than the one the search was designed for.',
+    presets: [ { name: 'Dump usernames & passwords', code: `' UNION SELECT id, username, password, email FROM users--` }, { name: 'Probe column count first', code: `' UNION SELECT NULL, NULL, NULL, NULL--` }, { name: 'Search normally (no attack)', code: `Laptop` } ],
+    placeholder: "Try: ' UNION SELECT id, username, password, email FROM users--" },
+  { key: 'stacked', icon: 'i-bomb', name: 'Stacked Queries (DROP TABLE)', description: 'Stacked queries let an attacker chain a second, destructive command onto the original query using a semicolon.',
+    presets: [ { name: 'Drop the products table', code: `Laptop'; DROP TABLE products;--` }, { name: 'Delete all users', code: `x'; DELETE FROM users;--` }, { name: 'Search normally (no attack)', code: `Laptop` } ],
+    placeholder: "Try: Laptop'; DROP TABLE products;--" }
+];
+
+let tableDropped = { products: false, users: false };
+
+function renderDemo() {
+  const container = document.getElementById('view-demo');
+  const cfg = attackConfigs[currentAttackDemo];
+
+  container.innerHTML = `
+    <div class="intro-card">
+      <div class="intro-icon-wrap"><svg class="icon icon-lg"><use href="#${cfg.icon}"/></svg></div>
+      <div>
+        <div class="intro-label">Interactive Demo</div>
+        <div class="intro-title">${cfg.name}</div>
+        <div class="intro-desc">${cfg.description}</div>
+      </div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-sidebar">
+        <div class="mode-toggle">
+          <button class="mode-btn ${demoMode==='vulnerable'?'active mode-vuln':''}" onclick="setMode('vulnerable')"><svg class="icon"><use href="#i-lock-open"/></svg>Vulnerable</button>
+          <button class="mode-btn ${demoMode==='secure'?'active mode-safe':''}" onclick="setMode('secure')"><svg class="icon"><use href="#i-lock"/></svg>Secure</button>
+        </div>
+
+        <div class="sidebar-label"><svg class="icon" style="width:13px;height:13px"><use href="#i-key"/></svg>Preset Attack Strings</div>
+        ${cfg.presets.map((p, i) => `
+          <button class="preset-btn" onclick="loadPreset(${i})">
+            <div class="preset-name">${p.name}</div>
+            <div class="preset-code">${escapeHtml(p.code)}</div>
+          </button>
+        `).join('')}
+
+        <div class="preset-divider"></div>
+        <div class="sidebar-label"><svg class="icon" style="width:13px;height:13px"><use href="#i-terminal"/></svg>Or Free Type</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.6;">Type anything you want into the search box below — including your own injection attempts.</div>
+      </div>
+
+      <div class="demo-main">
+        ${renderDemoMain(cfg)}
+      </div>
+    </div>
+  `;
+
+  const input = document.getElementById('demo-input');
+  if (input) {
+    input.addEventListener('input', () => updateLiveQuery(cfg));
+    updateLiveQuery(cfg);
+  }
+}
+
+function renderDemoMain(cfg) {
+  if (cfg.key === 'auth') {
+    return `
+      <div class="login-card">
+        <div class="search-label"><svg class="icon"><use href="#i-lock"/></svg>Login — Internal Portal</div>
+        <div class="login-field">
+          <label>Username</label>
+          <input type="text" id="demo-username" value="guest" />
+        </div>
+        <div class="login-field">
+          <label>Password</label>
+          <input type="text" id="demo-input" placeholder="${cfg.placeholder}" autocomplete="off" />
+        </div>
+        <button class="login-submit" onclick="runAuthAttack()"><svg class="icon" style="stroke:white"><use href="#i-arrow-right"/></svg>Sign In</button>
+      </div>
+      <div class="results-card" style="margin-bottom:14px;">
+        <div class="results-head neutral"><svg class="icon"><use href="#i-database"/></svg><span>Query Sent to Database</span></div>
+        <div class="results-body" style="padding:0;">
+          <div class="query-view" id="live-query"></div>
+        </div>
+      </div>
+      <div id="demo-output"></div>
+    `;
+  }
+
+  if (cfg.key === 'union') {
+    return `
+      <div class="demo-search-card">
+        <div class="search-label"><svg class="icon"><use href="#i-search"/></svg>Product Search</div>
+        <div class="search-row">
+          <input type="text" id="demo-input" class="search-input" placeholder="${cfg.placeholder}" autocomplete="off" />
+          <button class="search-btn" onclick="runUnionAttack()"><svg class="icon" style="stroke:white"><use href="#i-search"/></svg>Search</button>
+        </div>
+        <div class="query-view" id="live-query"></div>
+      </div>
+      <div id="demo-output"></div>
+    `;
+  }
+
+  return `
+    <div class="demo-search-card">
+      <div class="search-label"><svg class="icon"><use href="#i-search"/></svg>Product Search</div>
+      <div class="search-row">
+        <input type="text" id="demo-input" class="search-input" placeholder="${cfg.placeholder}" autocomplete="off" />
+        <button class="search-btn" onclick="runStackedAttack()"><svg class="icon" style="stroke:white"><use href="#i-search"/></svg>Search</button>
+      </div>
+      <div class="query-view" id="live-query"></div>
+    </div>
+    <div id="demo-output"></div>
+  `;
+}
+
+function escapeHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function setMode(mode) { demoMode = mode; renderDemo(); }
+
+function loadPreset(i) {
+  const cfg = attackConfigs[currentAttackDemo];
+  const input = document.getElementById('demo-input');
+  input.value = cfg.presets[i].code;
+  updateLiveQuery(cfg);
+  document.querySelectorAll('.preset-btn').forEach((b, idx) => b.classList.toggle('active', idx === i));
+}
+
+function highlightSQLValue(val) {
+  const hasInjection = /['";]|--|\bOR\b|\bUNION\b|\bDROP\b|\bDELETE\b/i.test(val);
+  const escaped = escapeHtml(val);
+  return hasInjection ? `<span class="q-inject">${escaped}</span>` : `<span class="q-str">${escaped}</span>`;
+}
+
+function updateLiveQuery(cfg) {
+  const liveQueryEl = document.getElementById('live-query');
+  if (!liveQueryEl) return;
+  const val = document.getElementById('demo-input').value;
+
+  let html = `<div class="query-label"><svg class="icon"><use href="#${demoMode === 'vulnerable' ? 'i-alert' : 'i-shield-check'}"/></svg>${demoMode === 'vulnerable' ? 'Vulnerable query (string concatenation)' : 'Secure query (parameterized)'}</div>`;
+
+  if (cfg.key === 'auth') {
+    const username = document.getElementById('demo-username') ? document.getElementById('demo-username').value : 'guest';
+    if (demoMode === 'vulnerable') {
+      html += `<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> <span class="q-table">users</span> <span class="q-kw">WHERE</span> <span class="q-lit">username = '${escapeHtml(username)}' </span><span class="q-kw">AND</span> <span class="q-lit">password = '</span>${highlightSQLValue(val)}<span class="q-lit">'</span>`;
+    } else {
+      html += `<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> <span class="q-table">users</span> <span class="q-kw">WHERE</span> <span class="q-lit">username =</span> <span class="q-amber">?</span> <span class="q-kw">AND</span> <span class="q-lit">password =</span> <span class="q-amber">?</span>\n<span class="q-comment"># parameters: ["${escapeHtml(username)}", "${escapeHtml(val)}"]  (sent separately, never parsed as SQL)</span>`;
+    }
+  } else if (cfg.key === 'union') {
+    if (demoMode === 'vulnerable') {
+      html += `<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> <span class="q-table">products</span> <span class="q-kw">WHERE</span> <span class="q-lit">name</span> <span class="q-kw">LIKE</span> <span class="q-lit">'%</span>${highlightSQLValue(val)}<span class="q-lit">%'</span>`;
+    } else {
+      html += `<span class="q-kw">SELECT</span> id, name, price <span class="q-kw">FROM</span> <span class="q-table">products</span> <span class="q-kw">WHERE</span> <span class="q-lit">name</span> <span class="q-kw">LIKE</span> <span class="q-amber">?</span>\n<span class="q-comment"># parameters: ["%${escapeHtml(val)}%"]  (sent separately, never parsed as SQL)</span>`;
+    }
+  } else {
+    if (demoMode === 'vulnerable') {
+      html += `<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> <span class="q-table">products</span> <span class="q-kw">WHERE</span> <span class="q-lit">name = '</span>${highlightSQLValue(val)}<span class="q-lit">';</span>`;
+    } else {
+      html += `<span class="q-kw">SELECT</span> * <span class="q-kw">FROM</span> <span class="q-table">products</span> <span class="q-kw">WHERE</span> <span class="q-lit">name =</span> <span class="q-amber">?</span>\n<span class="q-comment"># parameters: ["${escapeHtml(val)}"]  (sent separately — semicolons inside it do nothing special)</span>`;
+    }
+  }
+
+  liveQueryEl.innerHTML = html;
+}
+
+function runAuthAttack() {
+  const pw = document.getElementById('demo-input').value;
+  const username = document.getElementById('demo-username').value;
+  const output = document.getElementById('demo-output');
+
+  if (demoMode === 'vulnerable') {
+    const alwaysTrue = /'\s*OR\s*'?1'?\s*=\s*'?1/i.test(pw) || /--/.test(pw);
+    if (alwaysTrue) {
+      const user = DB_USERS[0];
+      output.innerHTML = `
+        <div class="results-card">
+          <div class="results-head danger"><svg class="icon"><use href="#i-alert"/></svg><span>Authentication bypassed</span></div>
+          <div class="login-result success">
+            <svg class="icon icon-lg"><use href="#i-lock-open"/></svg>
+            <span><strong>Logged in as: ${user.username}</strong> (${user.is_admin ? 'Administrator' : 'User'})<br>
+            The injected SQL made the <code>WHERE</code> clause always evaluate to true. The database returned the <strong>first row in the table</strong> — which happens to be the admin account — and the app logged the attacker in without ever checking a real password.</span>
+          </div>
+        </div>`;
+    } else {
+      const match = DB_USERS.find(u => u.username === username && u.password === pw);
+      output.innerHTML = `
+        <div class="results-card">
+          <div class="results-head neutral"><svg class="icon"><use href="#i-database"/></svg><span>Login attempt</span></div>
+          <div class="login-result fail"><svg class="icon"><use href="${match ? '#i-check' : '#i-alert'}"/></svg><span>${match ? `<strong>Logged in as ${match.username}</strong>` : 'Invalid username or password.'}</span></div>
+        </div>`;
+    }
+  } else {
+    const match = DB_USERS.find(u => u.username === username && u.password === pw);
+    output.innerHTML = `
+      <div class="results-card">
+        <div class="results-head safe"><svg class="icon"><use href="#i-shield-check"/></svg><span>Attack blocked</span></div>
+        <div class="login-result blocked">
+          <svg class="icon icon-lg"><use href="#i-lock"/></svg>
+          <span>${match ? `<strong>Logged in as ${match.username}</strong>` : `<strong>Invalid username or password.</strong>`}<br>
+          ${!match ? `The text <code>${escapeHtml(pw)}</code> was sent to the database as a literal password value — quotes, dashes, and all. Since no user has that exact string as their password, the login correctly fails.` : ''}</span>
+        </div>
+      </div>`;
+  }
+}
+
+function runUnionAttack() {
+  const val = document.getElementById('demo-input').value;
+  const output = document.getElementById('demo-output');
+  const isUnion = /UNION\s+SELECT/i.test(val);
+
+  if (demoMode === 'vulnerable' && isUnion) {
+    let rows = DB_USERS.map(u => ({ id: u.id, name: u.username, price: u.password }));
+    output.innerHTML = `
+      <div class="results-card">
+        <div class="results-head danger"><svg class="icon"><use href="#i-upload"/></svg><span>Data exfiltrated via UNION</span><span class="result-count">${rows.length} rows</span></div>
+        <div class="results-body">
+          <table class="result-table">
+            <thead><tr><th>id</th><th>name &rarr; username</th><th>price &rarr; password</th></tr></thead>
+            <tbody>${rows.map(r => `<tr class="leaked"><td>${r.id}</td><td class="flag-cell">${r.name}</td><td class="flag-cell">${r.price}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+        <div class="alert-banner danger"><svg class="icon"><use href="#i-alert"/></svg><span>The UNION SELECT merged the <strong>users</strong> table into the product search results. Every username and plaintext password is now visible in what looks like a normal product list.</span></div>
+      </div>`;
+  } else if (demoMode === 'vulnerable') {
+    const matches = DB_PRODUCTS.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
+    output.innerHTML = renderProductTable(matches, 'neutral', 'Search results');
+  } else {
+    const matches = DB_PRODUCTS.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
+    output.innerHTML = `
+      <div class="results-card">
+        <div class="results-head safe"><svg class="icon"><use href="#i-shield-check"/></svg><span>Attack blocked</span><span class="result-count">${matches.length} rows</span></div>
+        ${matches.length ? renderProductRows(matches) : `<div class="empty-state"><svg class="icon"><use href="#i-search"/></svg>No products matched "<code>${escapeHtml(val)}</code>". The UNION SELECT syntax was treated as plain search text — the database never attempted to merge tables.</div>`}
+      </div>`;
+  }
+}
+
+function runStackedAttack() {
+  const val = document.getElementById('demo-input').value;
+  const output = document.getElementById('demo-output');
+  const isDrop = /;\s*DROP\s+TABLE/i.test(val);
+  const isDelete = /;\s*DELETE\s+FROM/i.test(val);
+
+  if (demoMode === 'vulnerable' && (isDrop || isDelete)) {
+    const target = isDrop ? (val.match(/DROP\s+TABLE\s+(\w+)/i) || [])[1] || 'products' : 'users';
+    if (target === 'products') tableDropped.products = true;
+    if (target.toLowerCase().includes('user') || isDelete) tableDropped.users = true;
+
+    output.innerHTML = `
+      <div class="danger-zone">
+<span class="dz-line"># Executing query 1: SELECT * FROM products WHERE name = '...';</span>
+<span class="dz-line">  result: 0 rows matched</span>
+<span class="dz-line"># Executing query 2 (stacked via semicolon): ${escapeHtml(isDrop ? 'DROP TABLE ' + target : 'DELETE FROM users')};</span>
+<span class="dz-line" style="font-weight:700;">  result: ${isDrop ? `TABLE '${target}' DROPPED. All rows and the table structure are gone.` : 'ALL ROWS in users table deleted.'}</span>
+      </div>
+      <div class="results-card" style="margin-top:14px;">
+        <div class="results-head danger"><svg class="icon"><use href="#i-bomb"/></svg><span>Destructive query executed</span></div>
+        <div class="alert-banner danger"><svg class="icon"><use href="#i-alert"/></svg><span>The semicolon ended the first query and started a second one. Because the database driver allowed multiple statements in a single call, the attacker's <code>${isDrop ? 'DROP TABLE' : 'DELETE FROM'}</code> command ran with no further checks.</span></div>
+      </div>`;
+  } else if (demoMode === 'vulnerable') {
+    if (tableDropped.products) {
+      output.innerHTML = `<div class="results-card"><div class="results-head danger"><svg class="icon"><use href="#i-database"/></svg><span>Table unavailable</span></div><div class="empty-state"><svg class="icon"><use href="#i-alert"/></svg>ERROR: relation "products" does not exist. This table was dropped by a previous stacked-query attack.<br><button class="btn btn-outline" style="margin-top:14px" onclick="resetDemoData()"><svg class="icon"><use href="#i-rotate"/></svg>Reset Demo Data</button></div></div>`;
+      return;
+    }
+    const matches = DB_PRODUCTS.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
+    output.innerHTML = renderProductTable(matches, 'neutral', 'Search results');
+  } else {
+    const matches = DB_PRODUCTS.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
+    output.innerHTML = `
+      <div class="results-card">
+        <div class="results-head safe"><svg class="icon"><use href="#i-shield-check"/></svg><span>Attack blocked</span><span class="result-count">${matches.length} rows</span></div>
+        ${matches.length ? renderProductRows(matches) : `<div class="empty-state"><svg class="icon"><use href="#i-search"/></svg>No products matched "<code>${escapeHtml(val)}</code>". The semicolon and DROP/DELETE text were treated as a literal search string — most parameterized drivers don't even permit multiple statements in one call, so no second query ever executes.</div>`}
+      </div>`;
+  }
+}
+
+function renderProductTable(rows, headClass, label) {
+  return `<div class="results-card">
+    <div class="results-head ${headClass}"><svg class="icon"><use href="#i-list"/></svg><span>${label}</span><span class="result-count">${rows.length} rows</span></div>
+    ${rows.length ? renderProductRows(rows) : `<div class="empty-state"><svg class="icon"><use href="#i-search"/></svg>No products found.</div>`}
+  </div>`;
+}
+function renderProductRows(rows) {
+  return `<div class="results-body"><table class="result-table">
+    <thead><tr><th>id</th><th>name</th><th>price</th><th>category</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${r.id}</td><td>${r.name}</td><td>$${r.price.toFixed(2)}</td><td>${r.category}</td></tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function resetDemoData() { tableDropped = { products: false, users: false }; renderDemo(); }
+
+function selectView(view) {
+  document.querySelectorAll('.view-tab').forEach((btn, i) => {
+    btn.classList.toggle('active', (view === 'walkthrough' && i === 0) || (view === 'demo' && i === 1));
+  });
+  document.getElementById('view-walkthrough').classList.toggle('active', view === 'walkthrough');
+  document.getElementById('view-demo').classList.toggle('active', view === 'demo');
+  document.getElementById('attack-selector').style.display = view === 'demo' ? 'block' : 'none';
+
+  if (view === 'walkthrough') renderWalkthrough();
+  if (view === 'demo') renderDemo();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function selectAttackDemo(idx) {
+  currentAttackDemo = idx;
+  document.querySelectorAll('.attack-tab').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+  renderDemo();
+}
+
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  document.getElementById('theme-icon').setAttribute('href', isDark ? '#i-sun' : '#i-moon');
+  try { localStorage.setItem('sqlilab-theme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+
+function initTheme() {
+  let saved = null;
+  try { saved = localStorage.getItem('sqlilab-theme'); } catch(e) {}
+  if (saved === 'dark') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('theme-icon').setAttribute('href', '#i-sun');
+  }
+}
+
+initTheme();
+renderWalkthrough();
+</script>
+</body>
+</html>
