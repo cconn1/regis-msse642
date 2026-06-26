@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ heading }}</h1>
+<table>
+  <tr><th>Date</th><th>Title</th><th>Type</th><th>Diff</th><th>Spots</th><th></th></tr>
+  {% for t in trips %}
+  <tr>
+    <td>{{ t.month }} {{ t.day }}</td>
+    <td><a href="/trips/{{ t.id }}">{{ t.title }}</a></td>
+    <td>{{ t.type }}{% if t.price %} (${{ t.price }}){% endif %}</td>
+    <td>{{ t.difficulty }}</td>
+    <td>{{ spots(t) }}</td>
+    <td><a href="/trips/{{ t.id }}">details</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

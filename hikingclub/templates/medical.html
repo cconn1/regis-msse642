@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Medical notes &mdash; {{ member.name }}</h1>
+<div class="note warn">Confidential. Spec says leader/admin only.</div>
+<p>{{ member.medical }}</p>
+<p><a href="/members/{{ member.id }}">&larr; Back to member</a></p>
+{% endblock %}

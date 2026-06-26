@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Register a Member</h2>
+{% if message %}<div class="note">{{ message }}</div>{% endif %}
+<form class="stack" action="/members/register" method="post">
+  <label>Name <input type="text" name="name"></label>
+  <label>Email <input type="text" name="email"></label>
+  <label>Password <input type="password" name="password"></label>
+  <label>Role
+    <select name="role">
+      <option value="member">member</option>
+      <option value="leader">leader</option>
+      <option value="admin">admin</option>
+    </select>
+  </label>
+  <button type="submit">Create account</button>
+</form>
+{% endblock %}

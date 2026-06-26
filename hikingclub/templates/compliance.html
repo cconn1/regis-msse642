@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Leader Compliance &mdash; {{ leader.name }}</h1>
+<p class="muted">First aid: {{ leader.first_aid | default("unknown") }} &middot;
+  Annual physical: {{ leader.physical | default("unknown") }}</p>
+<form class="stack" action="/leaders/{{ leader.id }}/compliance" method="post">
+  <label>First aid <input type="text" name="first_aid"></label>
+  <label>Physical <input type="text" name="physical"></label>
+  <button type="submit">Update</button>
+</form>
+{% endblock %}

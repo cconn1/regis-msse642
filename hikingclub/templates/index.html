@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Upcoming Events</h1>
+<p class="muted">Guided hikes, paddles, climbs, and excursions around Georgia.</p>
+<div class="grid">
+  {% for t in upcoming_events %}
+  <div class="card">
+    <span class="date">{{ t.month }} {{ t.day }} &middot; {{ t.time }}</span>
+    <span class="badge {{ t.status_class }}">{{ t.status }}</span>
+    <a href="/events/{{ t.id }}"><strong>{{ t.title }}</strong></a>
+    <span class="diff">{{ t.difficulty }} &middot; {{ t.location }}</span>
+    <p>{{ t.description }}</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

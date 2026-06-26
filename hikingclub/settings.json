@@ -1,0 +1,7 @@
+{
+	"github.copilot.chat.codeGeneration.instructions": [
+		{
+			"text": "Generate code with a maximum line length of 80 characters."
+		}
+	]
+}

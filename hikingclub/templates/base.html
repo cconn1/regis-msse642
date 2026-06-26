@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Georgia Hiking Club{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('index') }}">&#9968; Georgia Hiking Club</a>
+  <nav>
+    <a href="/trips">Trips</a>
+    <a href="/trips/local">Local</a>
+    <a href="/trips/excursions">Excursions</a>
+    <a href="/members">Members</a>
+    <a href="/leaders">Leaders</a>
+    {% if current_user %}
+      <a href="/dashboard">Dashboard</a>
+      <a href="/auth/logout">Logout ({{ current_user.name }})</a>
+    {% else %}
+      <a href="/auth/login">Login</a>
+      <a href="/members/register">Register</a>
+    {% endif %}
+    <form action="/search" method="get">
+      <input type="text" name="q" placeholder="Search trips">
+      <button type="submit">Go</button>
+    </form>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>
+  <span>GHC demo &mdash; local pen-test target.</span>
+  <a href="/security/password-policy">Password policy</a>
+  <a href="/api/users">User API</a>
+  <a href="/go?url=https://www.nps.gov/">External trails</a>
+</footer>
+<!-- Chatbot widget -->
+<div id="chat-bubble" onclick="document.getElementById('chat-box').classList.toggle('hidden')" title="Chat with us">&#128172;</div>
+<div id="chat-box" class="hidden">
+  <div id="chat-header">GHC Assistant <span onclick="document.getElementById('chat-box').classList.add('hidden')" style="cursor:pointer;float:right">&#x2715;</span></div>
+  <div id="chat-log"></div>
+  <div id="chat-input-row">
+    <input id="chat-input" type="text" placeholder="Ask about trips, payments…" autocomplete="off">
+    <button onclick="sendChat()">Send</button>
+  </div>
+</div>
+<script>
+  function addMsg(text, cls) {
+    var log = document.getElementById('chat-log');
+    var div = document.createElement('div');
+    div.className = 'chat-msg ' + cls;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+  function sendChat() {
+    var input = document.getElementById('chat-input');
+    var msg = input.value.trim();
+    if (!msg) return;
+    addMsg(msg, 'user');
+    input.value = '';
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ addMsg(d.reply, 'bot'); });
+  }
+  document.getElementById('chat-input').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') sendChat();
+  });
+</script>
+</body>
+</html>

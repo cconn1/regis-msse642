@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ member.name }}</h1>
+<p class="muted">#{{ member.id }} &middot; {{ member.email }} &middot;
+  role: {{ member.role }} &middot; {{ "BANNED" if member.banned else "active" }}</p>
+
+<div class="grid">
+  <div class="card"><a href="/members/{{ member.id }}/medical">Medical notes</a></div>
+  <div class="card"><a href="/members/{{ member.id }}/performance-notes">Performance notes</a></div>
+  <div class="card"><a href="/payments/history/{{ member.id }}">Payment history</a></div>
+</div>
+
+<h2>Edit profile</h2>
+<form class="stack" action="/members/{{ member.id }}/profile" method="post">
+  <label>Name <input type="text" name="name" value="{{ member.name }}"></label>
+  <label>Email <input type="text" name="email" value="{{ member.email }}"></label>
+  <button type="submit">Save</button>
+</form>
+
+<h2>Admin actions</h2>
+<form action="/admin/members/{{ member.id }}/ban" method="post" style="display:inline">
+  <button type="submit">Ban</button>
+</form>
+<form action="/admin/members/{{ member.id }}/unban" method="post" style="display:inline">
+  <button type="submit">Unban</button>
+</form>
+{% endblock %}

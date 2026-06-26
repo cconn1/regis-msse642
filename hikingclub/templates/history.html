@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Payment History &mdash; {{ member.name }}</h1>
+<p class="muted">Dues: {{ "paid" if member.dues_paid else "unpaid" }}</p>
+<table><tr><th>Trip</th><th>Fee</th></tr>
+{% for t in paid_trips %}<tr><td>{{ t.title }}</td><td>${{ t.price }}</td></tr>{% endfor %}
+</table>
+{% endblock %}
