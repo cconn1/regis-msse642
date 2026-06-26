@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="badge {{ trip.status_class }}">{{ trip.status }}</span>
+<h1>{{ trip.title }}</h1>
+<p class="muted">{{ trip.month }} {{ trip.day }} &middot; {{ trip.time }} &middot;
+  {{ trip.difficulty }} &middot; {{ trip.location }}</p>
+<p>{{ trip.description }}</p>
+<p class="muted">{{ spots }} &middot; Leader:
+  {{ leader.name if leader else "TBD" }}
+  {% if trip.price %}&middot; Fee: ${{ trip.price }}{% endif %}</p>
+
+<form action="/trips/{{ trip.id }}/register" method="post" style="display:inline">
+  <button type="submit">Register</button>
+</form>
+<form action="/trips/{{ trip.id }}/cancel-registration" method="post" style="display:inline">
+  <button type="submit">Cancel registration</button>
+</form>
+{% if trip.price %}
+<p><a href="/payments/excursions/{{ trip.id }}">Pay excursion fee</a></p>
+{% endif %}
+
+{% if current_user and current_user.role in ['leader','admin'] %}
+<h2>Leader tools</h2>
+<p>
+  <a href="/trips/{{ trip.id }}/waitlist">Waitlist</a> &middot;
+  <a href="/reports/unpaid-members/{{ trip.id }}">Unpaid report</a>
+</p>
+{% endif %}
+{% endblock %}

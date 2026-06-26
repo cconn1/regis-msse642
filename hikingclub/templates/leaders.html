@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Trip Leaders</h1>
+<table><tr><th>ID</th><th>Name</th><th>Role</th><th></th></tr>
+{% for l in leaders %}
+<tr><td>{{ l.id }}</td><td>{{ l.name }}</td><td>{{ l.role }}</td>
+<td><a href="/leaders/{{ l.id }}/compliance">compliance</a></td></tr>
+{% endfor %}
+</table>
+{% endblock %}

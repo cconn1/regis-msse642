@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Waitlist &mdash; {{ trip.title }}</h1>
+<table><tr><th>ID</th><th>Name</th></tr>
+{% for m in waiting %}<tr><td>{{ m.id }}</td><td>{{ m.name }}</td></tr>{% endfor %}
+</table>
+<form action="/trips/{{ trip.id }}/waitlist/promote" method="post">
+  <button type="submit">Promote next</button>
+</form>
+{% endblock %}

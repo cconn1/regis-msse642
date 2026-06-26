@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Unpaid Members &mdash; {{ trip.title }}</h1>
+<table><tr><th>ID</th><th>Name</th><th>Actions</th></tr>
+{% for m in unpaid %}
+<tr><td>{{ m.id }}</td><td>{{ m.name }}</td>
+<td>
+  <form action="/trips/{{ trip.id }}/drop-unpaid/{{ m.id }}" method="post" style="display:inline">
+    <button type="submit">Drop</button></form>
+  <form action="/trips/{{ trip.id }}/refund/{{ m.id }}" method="post" style="display:inline">
+    <button type="submit">Refund</button></form>
+</td></tr>
+{% endfor %}
+</table>
+{% endblock %}

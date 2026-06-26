@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- VULN: reflected XSS - q rendered unescaped via |safe -->
+<h2>Search results for: {{ q | safe }}</h2>
+{% if results %}
+<div class="grid">
+  {% for t in results %}
+  <div class="card">
+    <a href="/trips/{{ t.id }}"><strong>{{ t.title }}</strong></a>
+    <span class="diff">{{ t.location }}</span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="muted">No matching trips.</p>
+{% endif %}
+{% endblock %}

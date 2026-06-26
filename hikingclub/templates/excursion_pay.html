@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Pay Excursion Fee</h1>
+{% if message %}<div class="note">{{ message }}</div>{% endif %}
+<p>{{ trip.title }} &mdash; fee ${{ trip.price }}</p>
+<div class="note">Mock portal &mdash; no charge is ever made.</div>
+<form class="stack" action="/payments/excursions/{{ trip.id }}" method="post">
+  <button type="submit">Mark paid (mock)</button>
+</form>
+{% endblock %}

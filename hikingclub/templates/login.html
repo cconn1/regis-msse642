@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Member Login</h2>
+{% if error %}<div class="note warn">{{ error }}</div>{% endif %}
+<form class="stack" action="/auth/login" method="post">
+  <label>Email <input type="text" name="email" value="admin@ghc.test"></label>
+  <label>Password <input type="password" name="password"></label>
+  <button type="submit">Log in</button>
+</form>
+<p class="muted">Lab accounts: admin@ghc.test/admin &middot; leader@ghc.test/leader
+&middot; sam@ghc.test/password &middot; quinn@ghc.test/123</p>
+{% endblock %}

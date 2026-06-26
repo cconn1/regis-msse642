@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Membership Dues</h1>
+{% if message %}<div class="note">{{ message }}</div>{% endif %}
+<p class="muted">Status: {{ "paid" if user.dues_paid else "unpaid" }}</p>
+<div class="note">Mock portal &mdash; no card fields, no charge is ever made.</div>
+<form class="stack" action="/payments/membership-dues" method="post">
+  <button type="submit">Mark dues paid (mock)</button>
+</form>
+<p><a href="/payments/history/{{ user.id }}">My payment history</a></p>
+{% endblock %}

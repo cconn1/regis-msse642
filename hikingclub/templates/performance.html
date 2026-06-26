@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Performance notes &mdash; {{ member.name }}</h1>
+<ul>{% for n in member.performance %}<li>{{ n }}</li>{% endfor %}</ul>
+<form class="stack" action="/members/{{ member.id }}/performance-notes" method="post">
+  <label>Add note <input type="text" name="note"></label>
+  <button type="submit">Add</button>
+</form>
+{% endblock %}

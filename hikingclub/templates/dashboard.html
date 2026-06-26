@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Welcome, {{ current_user.name }}</h1>
+<p class="muted">Role: {{ current_user.role }} &middot; Dues paid:
+  {{ "yes" if current_user.dues_paid else "no" }}</p>
+<div class="grid">
+  <div class="card"><a href="/members/{{ current_user.id }}">My profile</a></div>
+  <div class="card"><a href="/trips">Browse trips</a></div>
+  <div class="card"><a href="/payments/membership-dues">Pay dues</a></div>
+  <div class="card"><a href="/auth/change-password">Change password</a></div>
+  {% if current_user.role in ['leader','admin'] %}
+  <div class="card"><a href="/leaders">Leaders</a></div>
+  {% endif %}
+</div>
+{% endblock %}

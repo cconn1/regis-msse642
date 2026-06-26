@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %} — {{ event.title }}{% endblock %}
+{% block content %}
+<span class="badge {{ event.status_class }}">{{ event.status }}</span>
+<h1>{{ event.title }}</h1>
+<p class="muted">{{ event.month }} {{ event.day }} &middot; {{ event.time }} &middot;
+  {{ event.difficulty }} &middot; {{ event.location }}</p>
+<p>{{ event.description }}</p>
+<p class="muted">{{ event.spots }}</p>
+
+<form action="/events/{{ event.id }}/signup" method="post" style="display:inline">
+  <button type="submit">Sign Up</button>
+</form>
+<p style="margin-top:1rem"><a href="/">&larr; Back to events</a></p>
+{% endblock %}
